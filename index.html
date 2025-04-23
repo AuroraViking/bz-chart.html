@@ -11,19 +11,35 @@
       color: white;
       font-family: Arial, sans-serif;
       text-align: center;
+      margin: 0;
+      padding: 0;
     }
+
+    #bzInfo, #auroraMessage {
+      padding: 0 10px;
+    }
+
     #bzInfo {
-      font-size: 1.2rem;
-      margin: 10px 0;
+      font-size: 1rem;
+      margin-top: 10px;
     }
+
     #auroraMessage {
-      font-size: 1.4rem;
+      font-size: 1.2rem;
       font-weight: bold;
       margin-bottom: 10px;
     }
+
+    .chart-container {
+      width: 100%;
+      max-width: 900px;
+      height: 60vh;
+      margin: 0 auto;
+    }
+
     canvas {
-      max-width: 100%;
-      margin: 40px auto;
+      width: 100% !important;
+      height: 100% !important;
     }
   </style>
 </head>
@@ -31,7 +47,9 @@
   <h2>Real-Time Interplanetary Magnetic Field Bz (nT)</h2>
   <div id="bzInfo">Calculating -BzH...</div>
   <div id="auroraMessage"></div>
-  <canvas id="bzChart" width="800" height="400"></canvas>
+  <div class="chart-container">
+    <canvas id="bzChart"></canvas>
+  </div>
 
   <script>
     const canvas = document.getElementById('bzChart');
@@ -96,7 +114,7 @@
             data: bzValues,
             fill: true,
             borderColor: 'white',
-            pointRadius: 2,
+            pointRadius: 0, // hide the dots
             tension: 0.3,
             backgroundColor: function(context) {
               const chart = context.chart;
@@ -116,6 +134,7 @@
         },
         options: {
           responsive: true,
+          maintainAspectRatio: false,
           scales: {
             x: {
               ticks: { color: 'white' },
