@@ -16,25 +16,25 @@
     }
 
     h2 {
-      font-size: 1.3rem;
+      font-size: 1.4rem;
       font-weight: 600;
-      margin: 12px 0 6px;
+      margin: 16px 0 8px;
     }
 
     #bzInfo, #auroraMessage {
-      padding: 0 8px;
+      padding: 0 12px;
     }
 
     #bzInfo {
-      font-size: 0.95rem;
-      margin-bottom: 4px;
+      font-size: 1rem;
+      margin-bottom: 6px;
     }
 
     #auroraMessage {
-      font-size: 1.1rem;
+      font-size: 1.2rem;
       font-weight: bold;
-      margin-bottom: 6px;
-      transition: all 0.4s ease-in-out;
+      margin-bottom: 8px;
+      transition: all 0.3s ease-in-out;
     }
 
     .aurora-strong {
@@ -44,9 +44,8 @@
     }
 
     @keyframes pulse {
-      0% { text-shadow: 0 0 10px #00ffcc, 0 0 20px #00ffcc; }
-      50% { text-shadow: 0 0 25px #00ffcc, 0 0 35px #00ffcc; }
-      100% { text-shadow: 0 0 10px #00ffcc, 0 0 20px #00ffcc; }
+      0%, 100% { text-shadow: 0 0 10px #00ffcc, 0 0 20px #00ffcc; }
+      50% { text-shadow: 0 0 30px #00ffcc, 0 0 40px #00ffcc; }
     }
 
     .chart-container {
@@ -64,60 +63,4 @@
     }
 
     .viking-banner {
-      position: fixed;
-      bottom: 0;
-      width: 100%;
-      height: 70px;
-      background: linear-gradient(to top, #000000ee, transparent);
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      z-index: 999;
-      pointer-events: none;
-    }
-
-    .viking-banner img {
-      height: 48px;
-      opacity: 0.9;
-      filter: drop-shadow(0 0 6px #00ffcc);
-    }
-  </style>
-</head>
-<body>
-  <h2>Aurora Viking Real-Time Bz Forecast</h2>
-  <div id="bzInfo">Calculating -BzH...</div>
-  <div id="auroraMessage"></div>
-  <div class="chart-container">
-    <canvas id="bzChart"></canvas>
-  </div>
-
-  <div class="viking-banner">
-    <img src="White.svg" alt="Aurora Viking logo" />
-  </div>
-
-  <script>
-    const canvas = document.getElementById('bzChart');
-    const bzInfo = document.getElementById('bzInfo');
-    const auroraMessage = document.getElementById('auroraMessage');
-
-    let chart;
-    let lastRange = "";
-
-    async function fetchBzData() {
-      try {
-        const response = await fetch('https://services.swpc.noaa.gov/products/solar-wind/mag-2-hour.json');
-        const data = await response.json();
-        const rows = data.slice(1).filter(row => !isNaN(parseFloat(row[3])));
-        const times = rows.map(row => row[0].slice(11, 16));
-        const bzValues = rows.map(row => parseFloat(row[3]));
-        return { times, bzValues };
-      } catch (err) {
-        console.error("Failed to fetch or parse Bz data:", err);
-        bzInfo.textContent = "Error fetching Bz data.";
-        return { times: [], bzValues: [] };
-      }
-    }
-
-    function calculateBzH(bzValues) {
-      let bzH = 0;
-      for (let bz of bzValues) {
+      position
