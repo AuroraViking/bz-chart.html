@@ -154,11 +154,12 @@
     }
 
     function getKpMessage(kp) {
-      if (kp === 1) return "Aurora low to the north";
-      if (kp === 2 || kp === 3) return "Aurora to the north";
-      if (kp === 4 || kp === 5) return "Aurora to the North and Overhead";
-      if (kp === 6 || kp === 7 || kp === 8) return "Aurora to the North, Overhead and South";
-      if (kp === 9) return "🌌 Aurora everywhere — let’s dance to the disco lights!";
+      if (kp === 0) return "Aurora might form low to the north if Bz goes negative";
+      if (kp === 1) return "Aurora might form Low to the northern horizon";
+      if (kp === 2) return "Aurora might form to the north";
+      if (kp === 3) return "Aurora will form to the north if Bz is negative";
+      if (kp === 4 || kp === 5) return "Aurora will form to the North and Overhead";
+      if (kp >= 6 && kp <= 9) return "🌌 Aurora can form anywhere – Let's dance to the disco lights!";
       return "Kp index not available";
     }
 
@@ -225,16 +226,16 @@
       if (bzValues.length === 0 || kp === null) return;
 
       const bzH = calculateBzH(bzValues);
-      const message = getAuroraMessage(bzH);
-      const kpText = getKpMessage(kp);
+      const bzMessage = getAuroraMessage(bzH);
+      const kpMessageText = getKpMessage(kp);
       const { yMin, yMax, tag } = getYAxisRange(bzValues);
 
       bzInfo.textContent = `Current -BzH (2hr): ${bzH}`;
-      auroraMessage.textContent = message;
+      auroraMessage.textContent = bzMessage;
       auroraMessage.className = bzH > 4.5 ? "aurora-strong" : "";
 
       kpInfo.textContent = `Kp index: ${kp}`;
-      kpMessage.textContent = kpText;
+      kpMessage.textContent = kpMessageText;
 
       if (!chart || lastRange !== tag) {
         drawChart(times, bzValues, yMin, yMax);
