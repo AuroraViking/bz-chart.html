@@ -1,44 +1,154 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Real-Time Bz Chart</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Aurora Viking Real-Time Forecast</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     body {
+      background: radial-gradient(circle at top, #000 0%, #020202 100%);
+      color: white;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      text-align: center;
       margin: 0;
-      background-color: black;
+      padding-bottom: 100px; /* room for logo */
     }
+
+    h2 {
+      font-size: 1.6rem;
+      font-weight: 600;
+      letter-spacing: 1px;
+      margin-top: 20px;
+    }
+
+    #bzInfo, #auroraMessage {
+      padding: 0 12px;
+    }
+
+    #bzInfo {
+      font-size: 1.1rem;
+      margin-top: 6px;
+    }
+
+    #auroraMessage {
+      font-size: 1.3rem;
+      font-weight: bold;
+      margin-bottom: 10px;
+      transition: all 0.4s ease-in-out;
+    }
+
+    .aurora-strong {
+      color: #00ffcc;
+      text-shadow: 0 0 10px #00ffcc, 0 0 20px #00ffcc;
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0% { text-shadow: 0 0 10px #00ffcc, 0 0 20px #00ffcc; }
+      50% { text-shadow: 0 0 25px #00ffcc, 0 0 35px #00ffcc; }
+      100% { text-shadow: 0 0 10px #00ffcc, 0 0 20px #00ffcc; }
+    }
+
+    .chart-container {
+      width: 100%;
+      max-width: 1000px;
+      height: 60vh;
+      margin: 0 auto;
+      padding: 0 10px;
+    }
+
     canvas {
       display: block;
-      width: 100vw;
-      height: 100vh;
+      width: 100% !important;
+      height: 100% !important;
+    }
+
+    .viking-banner {
+      position: fixed;
+      bottom: 0;
+      width: 100%;
+      height: 90px;
+      background: linear-gradient(to top, #000000ee, transparent);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 999;
+      pointer-events: none;
+    }
+
+    .viking-banner img {
+      height: 60px;
+      opacity: 0.9;
+      filter: drop-shadow(0 0 10px #00ffcc);
     }
   </style>
 </head>
 <body>
-  <canvas id="bzChart"></canvas>
-  <script>
-    const ctx = document.getElementById('bzChart').getContext('2d');
-    let bzChart;
+  <h2>Aurora Viking Real-Time Bz Forecast</h2>
+  <div id="bzInfo">Calculating -BzH...</div>
+  <div id="auroraMessage"></div>
+  <div class="chart-container">
+    <canvas id="bzChart"></canvas>
+  </div>
 
-    async function fetchData() {
+  <div class="viking-banner">
+    <img src="White.svg" alt="Aurora Viking logo" />
+  </div>
+
+  <script>
+    const canvas = document.getElementById('bzChart');
+    const bzInfo = document.getElementById('bzInfo');
+    const auroraMessage = document.getElementById('auroraMessage');
+
+    let chart;
+    let lastRange = "";
+
+    async function fetchBzData() {
       try {
         const response = await fetch('https://services.swpc.noaa.gov/products/solar-wind/mag-2-hour.json');
         const data = await response.json();
-        const rows = data.slice(1); // Skip headers
-        const times = rows.map(entry => entry[0].substring(11, 16));
-        const bzValues = rows.map(entry => parseFloat(entry[3]));
-
+        const rows = data.slice(1).filter(row => !isNaN(parseFloat(row[3])));
+        const times = rows.map(row => row[0].slice(11, 16));
+        const bzValues = rows.map(row => parseFloat(row[3]));
         return { times, bzValues };
-      } catch (error) {
-        console.error('Error fetching data:', error);
+      } catch (err) {
+        console.error("Failed to fetch or parse Bz data:", err);
+        bzInfo.textContent = "Error fetching Bz data.";
         return { times: [], bzValues: [] };
       }
     }
 
-    function createChart(times, bzValues) {
-      bzChart = new Chart(ctx, {
+    function calculateBzH(bzValues) {
+      let bzH = 0;
+      for (let bz of bzValues) {
+        if (bz < 0) bzH += (-bz * (1 / 60));
+      }
+      return parseFloat(bzH.toFixed(2));
+    }
+
+    function getAuroraMessage(bzH) {
+      if (bzH > 0 && bzH <= 1.5) return "Weak aurora possible in the next hours";
+      if (bzH > 1.5 && bzH <= 3) return "Faint aurora likely in the next few hours";
+      if (bzH > 3 && bzH <= 4.5) return "Moderate aurora likely in the next few hours";
+      if (bzH > 4.5 && bzH <= 6) return "Strong aurora likely in the next few hours";
+      if (bzH > 6) return "🌌 Strong aurora conditions, get out now!";
+      return "No aurora potential right now";
+    }
+
+    function getYAxisRange(bzValues) {
+      const min = Math.min(...bzValues);
+      const max = Math.max(...bzValues);
+
+      if (min >= -5 && max <= 5) return { yMin: -5, yMax: 5, tag: "tight" };
+      if (min >= -10 && max <= 10) return { yMin: -10, yMax: 10, tag: "medium" };
+      return { yMin: -100, yMax: 100, tag: "wide" };
+    }
+
+    function drawChart(times, bzValues, yMin, yMax) {
+      if (chart) chart.destroy();
+
+      chart = new Chart(canvas.getContext('2d'), {
         type: 'line',
         data: {
           labels: times,
@@ -46,24 +156,38 @@
             label: 'IMF Bz (nT)',
             data: bzValues,
             fill: true,
-            backgroundColor: 'rgba(255, 255, 255, 0.1)',
             borderColor: 'white',
-            pointRadius: 2,
+            pointRadius: 0,
+            hitRadius: 0,
+            hoverRadius: 0,
+            tension: 0.3,
+            backgroundColor: function(context) {
+              const chart = context.chart;
+              const {ctx, chartArea} = chart;
+              if (!chartArea) return 'rgba(255,255,255,0.1)';
+              const gradient = ctx.createLinearGradient(0, chartArea.top, 0, chartArea.bottom);
+              gradient.addColorStop(0, 'rgba(0, 255, 0, 0.3)');
+              gradient.addColorStop(0.5, 'rgba(255, 255, 255, 0.3)');
+              gradient.addColorStop(1, 'rgba(255, 0, 0, 0.3)');
+              return gradient;
+            },
             segment: {
-              borderColor: ctx => ctx.p0.parsed.y < 0 ? 'gold' : 'white'
+              borderColor: ctx => ctx.p0.parsed.y < 0 ? 'gold' : 'white',
             }
           }]
         },
         options: {
+          responsive: true,
+          maintainAspectRatio: false,
           scales: {
             x: {
               ticks: { color: 'white' },
               grid: { color: 'gray' }
             },
             y: {
-              min: -20,
-              max: 20,
-              ticks: { stepSize: 5, color: 'white' },
+              min: yMin,
+              max: yMax,
+              ticks: { stepSize: 10, color: 'white' },
               grid: { color: 'gray' }
             }
           },
@@ -75,20 +199,29 @@
     }
 
     async function updateChart() {
-      const { times, bzValues } = await fetchData();
-      if (bzChart) {
-        bzChart.data.labels = times;
-        bzChart.data.datasets[0].data = bzValues;
-        bzChart.update();
+      const { times, bzValues } = await fetchBzData();
+      if (bzValues.length === 0) return;
+
+      const bzH = calculateBzH(bzValues);
+      const message = getAuroraMessage(bzH);
+      const { yMin, yMax, tag } = getYAxisRange(bzValues);
+
+      bzInfo.textContent = `Current -BzH (2hr): ${bzH}`;
+      auroraMessage.textContent = message;
+
+      auroraMessage.className = bzH > 4.5 ? "aurora-strong" : "";
+
+      if (!chart || lastRange !== tag) {
+        drawChart(times, bzValues, yMin, yMax);
+        lastRange = tag;
       } else {
-        createChart(times, bzValues);
+        chart.data.labels = times;
+        chart.data.datasets[0].data = bzValues;
+        chart.update();
       }
     }
 
-    // Initial load
     updateChart();
-
-    // Update every 5 minutes
     setInterval(updateChart, 5 * 60 * 1000);
   </script>
 </body>
