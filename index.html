@@ -106,148 +106,158 @@
   </div>
 
   <script>
-    const canvas = document.getElementById('bzChart');
-    const bzInfo = document.getElementById('bzInfo');
-    const auroraMessage = document.getElementById('auroraMessage');
-    const kpInfo = document.getElementById('kpInfo');
-    const kpMessage = document.getElementById('kpMessage');
-    const chartContainer = document.querySelector('.chart-container');
+    document.addEventListener("DOMContentLoaded", function () {
+      const canvas = document.getElementById('bzChart');
+      const context = canvas.getContext('2d');
 
-    let chart;
-    let lastRange = "";
-
-    async function fetchBzData() {
-      const res = await fetch('https://services.swpc.noaa.gov/products/solar-wind/mag-2-hour.json');
-      const data = await res.json();
-      const rows = data.slice(1).filter(row => !isNaN(parseFloat(row[3])));
-      const times = rows.map(row => row[0].slice(11, 16));
-      const bzValues = rows.map(row => parseFloat(row[3]));
-      return { times, bzValues };
-    }
-
-    async function fetchKpData() {
-      const res = await fetch("https://services.swpc.noaa.gov/products/noaa-planetary-k-index.json");
-      const data = await res.json();
-      return parseInt(data[data.length - 1][1]);
-    }
-
-    function calculateBzH(bzValues) {
-      return parseFloat(bzValues.filter(bz => bz < 0).reduce((acc, bz) => acc + (-bz / 60), 0).toFixed(2));
-    }
-
-    function setTheme(bzH) {
-      let bg, border, text;
-      if (bzH <= 1.5) {
-        bg = 'radial-gradient(circle at top, #001933, #000)';
-        border = '0 0 10px #66ccff';
-      } else if (bzH <= 3) {
-        bg = 'radial-gradient(circle at top, #003311, #000)';
-        border = '0 0 10px #00ff99';
-      } else if (bzH <= 4.5) {
-        bg = 'radial-gradient(circle at top, #332900, #000)';
-        border = '0 0 15px gold';
-      } else if (bzH <= 6) {
-        bg = 'radial-gradient(circle at top, #331a00, #000)';
-        border = '0 0 20px orange';
-      } else {
-        bg = 'radial-gradient(circle at top, #2b0000, #000)';
-        border = '0 0 30px red';
+      if (!context) {
+        console.error('Chart context could not be initialized.');
+        return;
       }
-      document.body.style.background = bg;
-      chartContainer.style.boxShadow = border;
-    }
 
-    function getKpMessage(kp) {
-      if (kp === 0) return "Aurora might form low to the north if Bz goes negative";
-      if (kp === 1) return "Aurora might form Low to the northern horizon";
-      if (kp === 2) return "Aurora might form to the north";
-      if (kp === 3) return "Aurora will form to the north if Bz is negative";
-      if (kp === 4 || kp === 5) return "Aurora will form to the North and Overhead";
-      if (kp >= 6 && kp <= 9) return "✨ Aurora can form anywhere - Let's dance to the disco lights!";
-      return "Kp index not available";
-    }
+      const bzInfo = document.getElementById('bzInfo');
+      const auroraMessage = document.getElementById('auroraMessage');
+      const kpInfo = document.getElementById('kpInfo');
+      const kpMessage = document.getElementById('kpMessage');
+      const chartContainer = document.querySelector('.chart-container');
 
-    function drawChart(times, bzValues, yMin, yMax) {
-      if (chart) chart.destroy();
-      chart = new Chart(canvas.getContext('2d'), {
-        type: 'line',
-        data: {
-          labels: times,
-          datasets: [{
-            label: 'IMF Bz (nT)',
-            data: bzValues,
-            fill: true,
-            borderColor: 'white',
-            pointRadius: 0,
-            tension: 0.3,
-            backgroundColor: function(ctx) {
-              const {chartArea, ctx: c} = ctx.chart;
-              const gradient = c.createLinearGradient(0, chartArea.top, 0, chartArea.bottom);
-              gradient.addColorStop(0, 'rgba(0,255,0,0.3)');
-              gradient.addColorStop(0.5, 'rgba(255,255,255,0.3)');
-              gradient.addColorStop(1, 'rgba(255,0,0,0.3)');
-              return gradient;
-            },
-            segment: {
-              borderColor: ctx => ctx.p0.parsed.y < 0 ? 'gold' : 'white'
-            }
-          }]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          scales: {
-            x: { ticks: { color: 'white' }, grid: { color: 'gray' } },
-            y: {
-              min: yMin, max: yMax,
-              ticks: { stepSize: 10, color: 'white' },
-              grid: { color: 'gray' }
-            }
-          },
-          plugins: {
-            legend: { labels: { color: 'white' } }
-          }
+      let chart;
+      let lastRange = "";
+
+      async function fetchBzData() {
+        const res = await fetch('https://services.swpc.noaa.gov/products/solar-wind/mag-2-hour.json');
+        const data = await res.json();
+        const rows = data.slice(1).filter(row => !isNaN(parseFloat(row[3])));
+        const times = rows.map(row => row[0].slice(11, 16));
+        const bzValues = rows.map(row => parseFloat(row[3]));
+        return { times, bzValues };
+      }
+
+      async function fetchKpData() {
+        const res = await fetch("https://services.swpc.noaa.gov/products/noaa-planetary-k-index.json");
+        const data = await res.json();
+        return parseInt(data[data.length - 1][1]);
+      }
+
+      function calculateBzH(bzValues) {
+        return parseFloat(bzValues.filter(bz => bz < 0).reduce((acc, bz) => acc + (-bz / 60), 0).toFixed(2));
+      }
+
+      function setTheme(bzH) {
+        let bg, border;
+        if (bzH <= 1.5) {
+          bg = 'radial-gradient(circle at top, #001933, #000)';
+          border = '0 0 10px #66ccff';
+        } else if (bzH <= 3) {
+          bg = 'radial-gradient(circle at top, #003311, #000)';
+          border = '0 0 10px #00ff99';
+        } else if (bzH <= 4.5) {
+          bg = 'radial-gradient(circle at top, #332900, #000)';
+          border = '0 0 15px gold';
+        } else if (bzH <= 6) {
+          bg = 'radial-gradient(circle at top, #331a00, #000)';
+          border = '0 0 20px orange';
+        } else {
+          bg = 'radial-gradient(circle at top, #2b0000, #000)';
+          border = '0 0 30px red';
         }
-      });
-    }
-
-    async function updateChart() {
-      const { times, bzValues } = await fetchBzData();
-      const kp = await fetchKpData();
-      if (!bzValues.length || kp === null) return;
-
-      const bzH = calculateBzH(bzValues);
-      const message = bzH > 6 ? "✨ Strong aurora conditions – Get out now!" : getKpMessage(kp);
-      const { yMin, yMax, tag } = getYAxisRange(bzValues);
-
-      bzInfo.textContent = `Current -BzH (2hr): ${bzH}`;
-      auroraMessage.textContent = message;
-      kpInfo.textContent = `Kp index: ${kp}`;
-      kpMessage.textContent = getKpMessage(kp);
-
-      auroraMessage.className = bzH > 4.5 ? "aurora-strong" : "";
-      setTheme(bzH);
-
-      if (!chart || lastRange !== tag) {
-        drawChart(times, bzValues, yMin, yMax);
-        lastRange = tag;
-      } else {
-        chart.data.labels = times;
-        chart.data.datasets[0].data = bzValues;
-        chart.update();
+        document.body.style.background = bg;
+        chartContainer.style.boxShadow = border;
       }
-    }
 
-    function getYAxisRange(bzValues) {
-      const min = Math.min(...bzValues);
-      const max = Math.max(...bzValues);
-      if (min >= -5 && max <= 5) return { yMin: -5, yMax: 5, tag: "tight" };
-      if (min >= -10 && max <= 10) return { yMin: -10, yMax: 10, tag: "medium" };
-      return { yMin: -100, yMax: 100, tag: "wide" };
-    }
+      function getKpMessage(kp) {
+        if (kp === 0) return "Aurora might form low to the north if Bz goes negative";
+        if (kp === 1) return "Aurora might form Low to the northern horizon";
+        if (kp === 2) return "Aurora might form to the north";
+        if (kp === 3) return "Aurora will form to the north if Bz is negative";
+        if (kp === 4 || kp === 5) return "Aurora will form to the North and Overhead";
+        if (kp >= 6 && kp <= 9) return "✨ Aurora can form anywhere - Let's dance to the disco lights!";
+        return "Kp index not available";
+      }
 
-    updateChart();
-    setInterval(updateChart, 5 * 60 * 1000);
+      function drawChart(times, bzValues, yMin, yMax) {
+        if (chart) chart.destroy();
+        chart = new Chart(context, {
+          type: 'line',
+          data: {
+            labels: times,
+            datasets: [{
+              label: 'IMF Bz (nT)',
+              data: bzValues,
+              fill: true,
+              borderColor: 'white',
+              pointRadius: 0,
+              tension: 0.3,
+              backgroundColor: function(ctx) {
+                const {chartArea, ctx: c} = ctx.chart;
+                if (!chartArea) return;
+                const gradient = c.createLinearGradient(0, chartArea.top, 0, chartArea.bottom);
+                gradient.addColorStop(0, 'rgba(0,255,0,0.3)');
+                gradient.addColorStop(0.5, 'rgba(255,255,255,0.3)');
+                gradient.addColorStop(1, 'rgba(255,0,0,0.3)');
+                return gradient;
+              },
+              segment: {
+                borderColor: ctx => ctx.p0.parsed.y < 0 ? 'gold' : 'white'
+              }
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+              x: { ticks: { color: 'white' }, grid: { color: 'gray' } },
+              y: {
+                min: yMin, max: yMax,
+                ticks: { stepSize: 10, color: 'white' },
+                grid: { color: 'gray' }
+              }
+            },
+            plugins: {
+              legend: { labels: { color: 'white' } }
+            }
+          }
+        });
+      }
+
+      function getYAxisRange(bzValues) {
+        const min = Math.min(...bzValues);
+        const max = Math.max(...bzValues);
+        if (min >= -5 && max <= 5) return { yMin: -5, yMax: 5, tag: "tight" };
+        if (min >= -10 && max <= 10) return { yMin: -10, yMax: 10, tag: "medium" };
+        return { yMin: -100, yMax: 100, tag: "wide" };
+      }
+
+      async function updateChart() {
+        const { times, bzValues } = await fetchBzData();
+        const kp = await fetchKpData();
+        if (!bzValues.length || kp === null) return;
+
+        const bzH = calculateBzH(bzValues);
+        const message = bzH > 6 ? "✨ Strong aurora conditions – Get out now!" : getKpMessage(kp);
+        const { yMin, yMax, tag } = getYAxisRange(bzValues);
+
+        bzInfo.textContent = `Current -BzH (2hr): ${bzH}`;
+        auroraMessage.textContent = message;
+        kpInfo.textContent = `Kp index: ${kp}`;
+        kpMessage.textContent = getKpMessage(kp);
+
+        auroraMessage.className = bzH > 4.5 ? "aurora-strong" : "";
+        setTheme(bzH);
+
+        if (!chart || lastRange !== tag) {
+          drawChart(times, bzValues, yMin, yMax);
+          lastRange = tag;
+        } else {
+          chart.data.labels = times;
+          chart.data.datasets[0].data = bzValues;
+          chart.update();
+        }
+      }
+
+      updateChart();
+      setInterval(updateChart, 5 * 60 * 1000);
+    });
   </script>
 </body>
 </html>
