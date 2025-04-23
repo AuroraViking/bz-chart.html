@@ -3,37 +3,57 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Real-Time IMF Bz Chart</title>
+  <title>Aurora Viking Real-Time Forecast</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     body {
-      background-color: black;
+      background: radial-gradient(circle at top, #000 0%, #020202 100%);
       color: white;
-      font-family: Arial, sans-serif;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
       text-align: center;
       margin: 0;
-      padding: 0;
+      padding-bottom: 100px; /* room for logo */
+    }
+
+    h2 {
+      font-size: 1.6rem;
+      font-weight: 600;
+      letter-spacing: 1px;
+      margin-top: 20px;
     }
 
     #bzInfo, #auroraMessage {
-      padding: 0 10px;
+      padding: 0 12px;
     }
 
     #bzInfo {
-      font-size: 1rem;
-      margin-top: 10px;
+      font-size: 1.1rem;
+      margin-top: 6px;
     }
 
     #auroraMessage {
-      font-size: 1.2rem;
+      font-size: 1.3rem;
       font-weight: bold;
       margin-bottom: 10px;
+      transition: all 0.4s ease-in-out;
+    }
+
+    .aurora-strong {
+      color: #00ffcc;
+      text-shadow: 0 0 10px #00ffcc, 0 0 20px #00ffcc;
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0% { text-shadow: 0 0 10px #00ffcc, 0 0 20px #00ffcc; }
+      50% { text-shadow: 0 0 25px #00ffcc, 0 0 35px #00ffcc; }
+      100% { text-shadow: 0 0 10px #00ffcc, 0 0 20px #00ffcc; }
     }
 
     .chart-container {
       width: 100%;
       max-width: 1000px;
-      height: 60vh; /* Perfect mobile-friendly height */
+      height: 60vh;
       margin: 0 auto;
       padding: 0 10px;
     }
@@ -43,14 +63,37 @@
       width: 100% !important;
       height: 100% !important;
     }
+
+    .viking-banner {
+      position: fixed;
+      bottom: 0;
+      width: 100%;
+      height: 90px;
+      background: linear-gradient(to top, #000000ee, transparent);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 999;
+      pointer-events: none;
+    }
+
+    .viking-banner img {
+      height: 60px;
+      opacity: 0.9;
+      filter: drop-shadow(0 0 10px #00ffcc);
+    }
   </style>
 </head>
 <body>
-  <h2>Real-Time Interplanetary Magnetic Field Bz (nT)</h2>
+  <h2>Aurora Viking Real-Time Bz Forecast</h2>
   <div id="bzInfo">Calculating -BzH...</div>
   <div id="auroraMessage"></div>
   <div class="chart-container">
     <canvas id="bzChart"></canvas>
+  </div>
+
+  <div class="viking-banner">
+    <img src="White.svg" alt="Aurora Viking logo" />
   </div>
 
   <script>
@@ -103,9 +146,7 @@
     }
 
     function drawChart(times, bzValues, yMin, yMax) {
-      if (chart) {
-        chart.destroy();
-      }
+      if (chart) chart.destroy();
 
       chart = new Chart(canvas.getContext('2d'), {
         type: 'line',
@@ -124,7 +165,6 @@
               const chart = context.chart;
               const {ctx, chartArea} = chart;
               if (!chartArea) return 'rgba(255,255,255,0.1)';
-
               const gradient = ctx.createLinearGradient(0, chartArea.top, 0, chartArea.bottom);
               gradient.addColorStop(0, 'rgba(0, 255, 0, 0.3)');
               gradient.addColorStop(0.5, 'rgba(255, 255, 255, 0.3)');
@@ -160,7 +200,6 @@
 
     async function updateChart() {
       const { times, bzValues } = await fetchBzData();
-
       if (bzValues.length === 0) return;
 
       const bzH = calculateBzH(bzValues);
@@ -169,6 +208,8 @@
 
       bzInfo.textContent = `Current -BzH (2hr): ${bzH}`;
       auroraMessage.textContent = message;
+
+      auroraMessage.className = bzH > 4.5 ? "aurora-strong" : "";
 
       if (!chart || lastRange !== tag) {
         drawChart(times, bzValues, yMin, yMax);
