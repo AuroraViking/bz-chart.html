@@ -32,12 +32,14 @@
 
     .chart-container {
       width: 100%;
-      max-width: 900px;
-      height: 60vh;
+      max-width: 1000px;
+      height: 80vh;
       margin: 0 auto;
+      padding: 0 10px;
     }
 
     canvas {
+      display: block;
       width: 100% !important;
       height: 100% !important;
     }
@@ -114,7 +116,9 @@
             data: bzValues,
             fill: true,
             borderColor: 'white',
-            pointRadius: 0, // hide the dots
+            pointRadius: 0, // no dots
+            hitRadius: 0,
+            hoverRadius: 0,
             tension: 0.3,
             backgroundColor: function(context) {
               const chart = context.chart;
@@ -177,7 +181,7 @@
     }
 
     updateChart();
-    setInterval(updateChart, 5 * 60 * 1000); // every 5 minutes
+    setInterval(updateChart, 5 * 60 * 1000);
   </script>
 </body>
 </html>
