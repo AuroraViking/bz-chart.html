@@ -1,10 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Aurora Viking Real-Time Forecast</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body {
+      background: radial-gradient(circle at top, #000 0%, #020202 100%);
+      color: white;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      text-align: center;
+      margin: 0;
+      padding-bottom: 100px;
+    }
+    .chart-container {
+      width: 100%;
+      max-width: 1000px;
+      height: 60vh;
+      margin: 0 auto;
+      padding: 0 10px;
+    }
+    canvas {
+      display: block;
+      width: 100% !important;
+      height: 100% !important;
+    }
+    .viking-banner {
+      position: fixed;
+      bottom: 0;
+      width: 100%;
+      height: 90px;
+      background: linear-gradient(to top, #000000ee, transparent);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 999;
+      pointer-events: none;
+    }
+    .viking-banner img {
+      height: 60px;
+      opacity: 0.9;
+      filter: drop-shadow(0 0 10px #00ffcc);
+    }
+  </style>
+</head>
+<body>
+
+<!-- Original Content Starts Here -->
+<div id="bzInfo">Calculating -BzH...</div>
+<div id="auroraMessage"></div>
+<div id="kpInfo">Loading Kp index...</div>
+<div id="kpMessage"></div>
+<div class="chart-container" id="chartWrapper">
+  <canvas id="bzChart"></canvas>
+</div>
 <a href="https://auroraviking.is" target="_blank" style="text-decoration: none;">
-    <div class="viking-banner">
-      <img src="White.svg" alt="Aurora Viking logo" />
-    </div>
+  <div class="viking-banner">
+    <img src="White.svg" alt="Aurora Viking logo" />
+  </div>
 </a>
 
-  <script>
+<!-- Your JavaScript will follow here -->
+<script>
     document.addEventListener("DOMContentLoaded", function () {
       const canvas = document.getElementById('bzChart');
       const context = canvas.getContext('2d');
@@ -35,8 +93,10 @@
       }
 
       function calculateBzH(bzValues) {
-        return parseFloat(bzValues.filter(bz => bz < 0).reduce((acc, bz) => acc + (-bz / 60), 0).toFixed(2));
-      }
+  const oneHourValues = bzValues.slice(-120); // Last 60 entries ≈ 1 hour
+  const bzH = oneHourValues.filter(bz => bz < 0).reduce((acc, bz) => acc + (-bz / 60), 0);
+  return parseFloat(bzH.toFixed(2));
+}
 
       function setTheme(bzH) {
         let bg, border;
@@ -75,13 +135,25 @@
         return "Kp index not available";
       }
 
-      function drawChart(times, bzValues, yMin, yMax) {
+      function drawChart(times, bzValues, yMin, yMax, etaLabel, minutesToEarth, etaIndex) {
         if (chart) chart.destroy();
         chart = new Chart(context, {
           type: 'line',
           data: {
             labels: times,
-            datasets: [{
+            datasets: [
+            {
+              type: 'line',
+              label: etaLabel,
+              data: etaIndex >= 0 && etaIndex < times.length
+                ? new Array(times.length).fill(null).map((_, i) => i === etaIndex ? 0 : null)
+                : new Array(times.length).fill(null),
+              borderColor: 'rgba(0, 255, 255, 0.6)',
+              borderWidth: 2,
+              pointRadius: 0,
+              borderDash: [5, 5]
+            },
+            {
               label: 'IMF Bz (nT)',
               data: bzValues,
               fill: true,
@@ -128,17 +200,34 @@
         return { yMin: -100, yMax: 100, tag: "wide" };
       }
 
-      async function updateChart() {
-        const { times, bzValues } = await fetchBzData();
+      async function fetchSpeedData() {
+  const res = await fetch('https://services.swpc.noaa.gov/products/solar-wind/plasma-2-hour.json');
+  const data = await res.json();
+  const lastRow = data[data.length - 1];
+  const speed = parseFloat(lastRow[2]); // km/s
+  return speed;
+}
+
+async function updateChart() {
+  const speed = await fetchSpeedData();
+  let minutesToEarth = speed > 0 ? (1.5e6 / (speed * 1000)) / 60 : 60;
+  minutesToEarth = Math.round(minutesToEarth);
+  console.log('Solar wind speed (km/s):', speed);
+  console.log('Estimated impact time (minutes):', minutesToEarth);
+  const { times, bzValues } = await fetchBzData();
+  console.log('Chart data points:', times.length);
+  const etaIndex = Math.max(0, Math.min(times.length - 1, times.length - minutesToEarth));
+  console.log('ETA line index:', etaIndex);
+  const etaLabel = `Impact ETA: ~${minutesToEarth} min`;
         const kp = await fetchKpData();
         if (!bzValues.length || kp === null) return;
 
         const bzH = calculateBzH(bzValues);
-        const message = bzH > 6 ? "✨ Strong aurora conditions – Get out now!" : getKpMessage(kp);
+        const bzHMessage = bzH > 6 ? "✨ Strong aurora conditions – Get out now!" : bzH > 4.5 ? "Strong aurora likely in the next few hours" : bzH > 3 ? "Moderate aurora likely in the next few hours" : bzH > 1.5 ? "Faint aurora likely in the next few hours" : bzH > 0 ? "Weak aurora possible in the next hours" : "No aurora potential right now";
         const { yMin, yMax, tag } = getYAxisRange(bzValues);
 
-        bzInfo.textContent = `Current -BzH (2hr): ${bzH}`;
-        auroraMessage.textContent = message;
+        bzInfo.innerHTML = `Current -BzH (1hr): ${bzH} <span title="BzH is a term coined by Kolbeinn Helgi Kristjansson, founder of Aurora Viking. It measures the total strength and duration of negative Bz — the longer and stronger the Bz is negative, the more aurora activity is likely." style="cursor: help; font-weight: bold; margin-left: 6px; color: #00ffcc;">ℹ️</span>`;
+        auroraMessage.textContent = bzHMessage;
         kpInfo.textContent = `Kp index: ${kp}`;
         kpMessage.textContent = getKpMessage(kp);
 
@@ -146,11 +235,15 @@
         setTheme(bzH);
 
         if (!chart || lastRange !== tag) {
-          drawChart(times, bzValues, yMin, yMax);
+          drawChart(times, bzValues, yMin, yMax, etaLabel, minutesToEarth, etaIndex);
           lastRange = tag;
         } else {
           chart.data.labels = times;
-          chart.data.datasets[0].data = bzValues;
+          chart.data.datasets[0].data = etaIndex >= 0 && etaIndex < times.length
+            ? new Array(times.length).fill(null).map((_, i) => i === etaIndex ? 0 : null)
+            : new Array(times.length).fill(null);
+          chart.data.datasets[0].label = etaLabel;
+          chart.data.datasets[1].data = bzValues;
           chart.update();
         }
       }
@@ -158,6 +251,7 @@
       updateChart();
       setInterval(updateChart, 5 * 60 * 1000);
     });
-  </script>
+</script>
+
 </body>
 </html>
