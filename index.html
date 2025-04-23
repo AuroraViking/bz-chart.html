@@ -49,6 +49,11 @@
       animation: pulse 2s infinite;
     }
 
+    .aurora-epic {
+      animation: flicker 0.3s infinite alternate, wave 4s ease-in-out infinite;
+      text-shadow: 0 0 15px #ff0066, 0 0 25px #ff0066;
+    }
+
     .chart-container {
       width: 100%;
       max-width: 1000px;
@@ -58,6 +63,10 @@
       border-radius: 12px;
       box-shadow: 0 0 20px rgba(255,255,255,0.2);
       transition: box-shadow 1s ease;
+    }
+
+    .chart-container.epic-border {
+      box-shadow: 0 0 40px 5px #ff0066;
     }
 
     canvas {
@@ -77,6 +86,7 @@
       align-items: center;
       z-index: 999;
       pointer-events: none;
+      animation: bannerPulse 4s infinite;
     }
 
     .viking-banner img {
@@ -90,6 +100,21 @@
       50% { text-shadow: 0 0 30px #00ffcc; }
       100% { text-shadow: 0 0 10px #00ffcc; }
     }
+
+    @keyframes flicker {
+      0% { opacity: 1; }
+      100% { opacity: 0.8; }
+    }
+
+    @keyframes wave {
+      0%, 100% { transform: translateX(0); }
+      50% { transform: translateX(3px); }
+    }
+
+    @keyframes bannerPulse {
+      0%, 100% { filter: brightness(1); }
+      50% { filter: brightness(1.2); }
+    }
   </style>
 </head>
 <body>
@@ -98,7 +123,7 @@
   <div id="auroraMessage"></div>
   <div id="kpInfo">Loading Kp index...</div>
   <div id="kpMessage"></div>
-  <div class="chart-container">
+  <div class="chart-container" id="chartWrapper">
     <canvas id="bzChart"></canvas>
   </div>
   <div class="viking-banner">
@@ -109,17 +134,13 @@
     document.addEventListener("DOMContentLoaded", function () {
       const canvas = document.getElementById('bzChart');
       const context = canvas.getContext('2d');
-
-      if (!context) {
-        console.error('Chart context could not be initialized.');
-        return;
-      }
+      if (!context) return;
 
       const bzInfo = document.getElementById('bzInfo');
       const auroraMessage = document.getElementById('auroraMessage');
       const kpInfo = document.getElementById('kpInfo');
       const kpMessage = document.getElementById('kpMessage');
-      const chartContainer = document.querySelector('.chart-container');
+      const chartContainer = document.getElementById('chartWrapper');
 
       let chart;
       let lastRange = "";
@@ -145,6 +166,8 @@
 
       function setTheme(bzH) {
         let bg, border;
+        chartContainer.classList.remove("epic-border");
+        auroraMessage.classList.remove("aurora-epic");
         if (bzH <= 1.5) {
           bg = 'radial-gradient(circle at top, #001933, #000)';
           border = '0 0 10px #66ccff';
@@ -157,9 +180,12 @@
         } else if (bzH <= 6) {
           bg = 'radial-gradient(circle at top, #331a00, #000)';
           border = '0 0 20px orange';
+          chartContainer.classList.add("epic-border");
         } else {
           bg = 'radial-gradient(circle at top, #2b0000, #000)';
           border = '0 0 30px red';
+          chartContainer.classList.add("epic-border");
+          auroraMessage.classList.add("aurora-epic");
         }
         document.body.style.background = bg;
         chartContainer.style.boxShadow = border;
