@@ -23,8 +23,9 @@
   <canvas id="bzChart" width="800" height="400"></canvas>
 
   <script>
-    const ctx = document.getElementById('bzChart').getContext('2d');
+    const canvas = document.getElementById('bzChart');
     let chart;
+    let lastRange = "";
 
     async function fetchBzData() {
       const response = await fetch('https://services.swpc.noaa.gov/products/solar-wind/mag-2-hour.json');
@@ -35,90 +36,88 @@
       return { times, bzValues };
     }
 
-    function calculateYAxisRange(bzValues) {
-      const minBz = Math.min(...bzValues);
-      const maxBz = Math.max(...bzValues);
+    function getYAxisRange(bzValues) {
+      const min = Math.min(...bzValues);
+      const max = Math.max(...bzValues);
 
-      if (minBz >= -5 && maxBz <= 5) {
-        return { yMin: -5, yMax: 5 };
-      } else {
-        return { yMin: -100, yMax: 100 };
-      }
+      if (min >= -5 && max <= 5) return { yMin: -5, yMax: 5, tag: "tight" };
+      if (min >= -10 && max <= 10) return { yMin: -10, yMax: 10, tag: "medium" };
+      return { yMin: -100, yMax: 100, tag: "wide" };
     }
 
-    async function updateChart() {
-      const { times, bzValues } = await fetchBzData();
-      const { yMin, yMax } = calculateYAxisRange(bzValues);
+    function drawChart(times, bzValues, yMin, yMax) {
+      if (chart) {
+        chart.destroy();
+      }
 
-      if (!chart) {
-        chart = new Chart(ctx, {
-          type: 'line',
-          data: {
-            labels: times,
-            datasets: [{
-              label: 'IMF Bz (nT)',
-              data: bzValues,
-              fill: true,
-              borderColor: 'white',
-              backgroundColor: 'rgba(255, 255, 255, 0.2)', // temporary, replaced later
-              segment: {
-                borderColor: ctx => ctx.p0.parsed.y < 0 ? 'gold' : 'white',
-              },
-              pointRadius: 2,
-              tension: 0.3
-            }]
-          },
-          options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            scales: {
-              x: {
-                ticks: { color: 'white' },
-                grid: { color: 'gray' }
-              },
-              y: {
-                min: yMin,
-                max: yMax,
-                ticks: { color: 'white', stepSize: 10 },
-                grid: { color: 'gray' }
-              }
-            },
-            plugins: {
-              legend: { labels: { color: 'white' } }
-            },
-            layout: {
-              padding: 10
-            },
-            animation: false
-          },
-          plugins: [{
-            id: 'customBackground',
-            beforeDraw: (chart) => {
-              const { ctx, chartArea } = chart;
-              if (!chartArea) return;
+      chart = new Chart(canvas.getContext('2d'), {
+        type: 'line',
+        data: {
+          labels: times,
+          datasets: [{
+            label: 'IMF Bz (nT)',
+            data: bzValues,
+            fill: true,
+            borderColor: 'white',
+            pointRadius: 2,
+            tension: 0.3,
+            backgroundColor: function(context) {
+              const chart = context.chart;
+              const {ctx, chartArea} = chart;
+              if (!chartArea) return null;
 
               const gradient = ctx.createLinearGradient(0, chartArea.top, 0, chartArea.bottom);
               gradient.addColorStop(0, 'rgba(0, 255, 0, 0.3)');
               gradient.addColorStop(0.5, 'rgba(255, 255, 255, 0.3)');
               gradient.addColorStop(1, 'rgba(255, 0, 0, 0.3)');
-
-              chart.data.datasets[0].backgroundColor = gradient;
+              return gradient;
+            },
+            segment: {
+              borderColor: ctx => ctx.p0.parsed.y < 0 ? 'gold' : 'white',
             }
           }]
-        });
+        },
+        options: {
+          responsive: true,
+          scales: {
+            x: {
+              ticks: { color: 'white' },
+              grid: { color: 'gray' }
+            },
+            y: {
+              min: yMin,
+              max: yMax,
+              ticks: {
+                stepSize: 10,
+                color: 'white'
+              },
+              grid: { color: 'gray' }
+            }
+          },
+          plugins: {
+            legend: { labels: { color: 'white' } }
+          }
+        }
+      });
+    }
+
+    async function updateChart() {
+      const { times, bzValues } = await fetchBzData();
+      const { yMin, yMax, tag } = getYAxisRange(bzValues);
+
+      // Only recreate chart if range has changed
+      if (!chart || lastRange !== tag) {
+        drawChart(times, bzValues, yMin, yMax);
+        lastRange = tag;
       } else {
         chart.data.labels = times;
         chart.data.datasets[0].data = bzValues;
-        chart.options.scales.y.min = yMin;
-        chart.options.scales.y.max = yMax;
         chart.update();
       }
     }
 
     updateChart();
-    setInterval(updateChart, 5 * 60 * 1000); // Every 5 minutes
+    setInterval(updateChart, 5 * 60 * 1000); // every 5 minutes
   </script>
 </body>
 </html>
-
-
