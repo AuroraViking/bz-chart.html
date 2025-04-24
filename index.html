@@ -48,11 +48,16 @@
 <body>
 
 <!-- Original Content Starts Here -->
-<div id="bzInfo">Calculating -BzH...</div>
-<div id="auroraMessage"></div>
-<div id="kpInfo">Loading Kp index...</div>
-<div id="kpMessage"></div>
-<div class="chart-container" id="chartWrapper">
+<div style="display: flex; justify-content: center; align-items: center; gap: 20px; flex-wrap: wrap; margin-top: 20px;">
+  <img src="White.svg" alt="Aurora Viking logo" style="height: 60px; filter: drop-shadow(0 0 10px #00ffcc);" />
+  <div>
+    <div id="bzInfo">Calculating -BzH...</div>
+    <div id="auroraMessage"></div>
+    <div id="kpInfo">Loading Kp index...</div>
+    <div id="kpMessage"></div>
+  </div>
+</div>
+<div class="chart-container" id="chartWrapper" style="margin-top: 30px;">
   <canvas id="bzChart"></canvas>
 </div>
 <a href="https://auroraviking.is" target="_blank" style="text-decoration: none;">
