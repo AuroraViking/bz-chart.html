@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Aurora Viking Real-Time Forecast</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0"></script>
+  <script src="https://cdn.jsdelivr.net/npm/suncalc@1.9.0/suncalc.js"></script>
   <style>
     body {
   background: radial-gradient(circle at top, #000 0%, #020202 100%), url('https://cdn.pixabay.com/photo/2017/08/30/07/52/space-2695569_1280.jpg');
@@ -370,9 +371,42 @@ kpInfo.innerHTML = `Kp index: <span style="color: ${kpColor}; font-weight: bold;
       updateChart();
       setInterval(updateChart, 5 * 60 * 1000);
 
+            // Compute and display astronomical twilight (darkness) using SunCalc
+      function computeDarkTimes() {
+        const now = new Date();
+        const times = SunCalc.getTimes(now, 64.1355, -21.8954);
+        const astroDusk = times.night;
+        const astroDawn = times.nightEnd;
+        const format = d => d ? d.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}) : null;
+        const start = format(astroDusk);
+        const end = format(astroDawn);
+        const darkMsg = start && end
+          ? `🌒 It's dark enough for auroras in Reykjavík between ${start} and ${end}`
+          : '🌒 Darkness time not available';
+        document.getElementById('darkInfo').textContent = darkMsg;
+
+        if (astroDusk) {
+          const countdownEl = document.getElementById('countdown');
+          const updateCountdown = () => {
+            const now2 = new Date();
+            let target = new Date(astroDusk);
+            if (target < now2) target.setDate(target.getDate()+1);
+            const diff = target - now2;
+            const hrs = Math.floor(diff/1000/60/60);
+            const mins = Math.floor((diff/1000/60)%60);
+            countdownEl.textContent = `🕒 Darkness begins in ${hrs}h ${mins}m`;
+          };
+          updateCountdown();
+          setInterval(updateCountdown,60000);
+        }
+      }
+
+      computeDarkTimes();
+      setInterval(computeDarkTimes,60*60*1000);
+
       async function fetchDarkTimes() {
   try {
-    const res = await fetch('https://raw.githubusercontent.com/AuroraViking/assets/main/twilight-2025.json');
+    const res = await fetch('https://raw.githubusercontent.com/AuroraViking/bz-chart.html/main/twilight-2025.json');
     const twilightData = await res.json();
     const today = new Date().toISOString().split('T')[0];
     const times = twilightData[today];
@@ -405,9 +439,6 @@ kpInfo.innerHTML = `Kp index: <span style="color: ${kpColor}; font-weight: bold;
     document.getElementById('darkInfo').textContent = '🌒 Darkness time not available';
   }
 }
-
-fetchDarkTimes();
-      setInterval(fetchDarkTimes, 60 * 60 * 1000);
 
           });
 </script>
