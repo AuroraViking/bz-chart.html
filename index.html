@@ -5,16 +5,18 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Aurora Viking Real-Time Forecast</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0"></script>
+  <script src="https://cdn.jsdelivr.net/npm/suncalc@1.9.0/suncalc.js"></script>
   <style>
     body {
-      background: radial-gradient(circle at top, #000 0%, #020202 100%);
+      background: radial-gradient(circle at top, #000 0%, #020202 100%), url('https://cdn.pixabay.com/photo/2017/08/30/07/52/space-2695569_1280.jpg');
+      background-size: cover;
+      background-attachment: fixed;
       color: white;
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
       text-align: center;
       margin: 0;
       padding-bottom: 100px;
     }
-
     .chart-container {
       width: 100%;
       max-width: 1000px;
@@ -22,175 +24,203 @@
       margin: 0 auto;
       padding: 0 10px;
     }
-
     canvas {
       display: block;
       width: 100% !important;
       height: 100% !important;
     }
+    .viking-banner img {
+      height: 60px;
+      filter: drop-shadow(0 0 10px #00ffcc);
+    }
+    @keyframes pulseGlowEpic {
+      0% { text-shadow: 0 0 30px red; transform: scale(1); }
+      50% { text-shadow: 0 0 60px red; transform: scale(1.2); }
+      100% { text-shadow: 0 0 30px red; transform: scale(1); }
+    }
+    @keyframes pulseGlowStrong {
+      0% { text-shadow: 0 0 20px gold; transform: scale(1); }
+      50% { text-shadow: 0 0 50px gold; transform: scale(1.15); }
+      100% { text-shadow: 0 0 20px gold; transform: scale(1); }
+    }
+    @keyframes pulseGlowModerate {
+      0% { text-shadow: 0 0 15px #00ff66; transform: scale(1); }
+      50% { text-shadow: 0 0 40px #00ff66; transform: scale(1.1); }
+      100% { text-shadow: 0 0 15px #00ff66; transform: scale(1); }
+    }
+    @keyframes pulseGlowWeak {
+      0% { text-shadow: 0 0 10px #66ccff; transform: scale(1); }
+      50% { text-shadow: 0 0 30px #66ccff; transform: scale(1.1); }
+      100% { text-shadow: 0 0 10px #66ccff; transform: scale(1); }
+    }
   </style>
 </head>
 <body>
-  <h2>Aurora Viking Real-Time Bz Forecast</h2>
-  <div id="darkInfo">🌒 Loading twilight data...</div>
-  <div id="countdown"></div>
-  <div id="bzInfo">Calculating -BzH...</div>
-  <div id="auroraMessage"></div>
-  <div id="kpInfo">Loading Kp index...</div>
-  <div id="kpMessage"></div>
-  <div class="chart-container">
-    <canvas id="bzChart"></canvas>
+
+<div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; max-width: 1000px; margin: 20px auto 0; padding: 0 20px;">
+  <div style="text-align: left;">
+    <div id="darkInfo" style="margin-bottom: 6px; font-size: 1.1rem; color: #ccc;">🌒 Calculating when it gets dark in Reykjavík...</div>
+    <div id="countdown" style="font-size: 0.95rem; color: #00ffcc; margin-bottom: 12px;"></div>
   </div>
+  <img src="White.svg" alt="Aurora Viking logo" />
+  <div style="text-align: left;">
+    <div id="bzInfo">Calculating -BzH...</div>
+    <div id="auroraMessage"></div>
+    <div id="kpInfo">Loading Kp index...</div>
+    <div id="kpMessage"></div>
+  </div>
+</div>
 
-  <script>
-    const twilightTimes = {
-      "04-24": { "start": "01:48", "end": "03:48" },
-      "04-25": { "start": "01:44", "end": "03:51" },
-      "04-26": { "start": "01:41", "end": "03:54" },
-      "04-27": { "start": "01:38", "end": "03:57" },
-      "04-28": { "start": "01:34", "end": "04:00" },
-      "04-29": { "start": "01:30", "end": "04:03" },
-      "04-30": { "start": "01:27", "end": "04:06" },
-      "05-01": { "start": "01:23", "end": "04:09" },
-      "05-02": { "start": "01:20", "end": "04:12" },
-      "05-03": { "start": "01:17", "end": "04:15" }
-    };
+<div class="chart-container">
+  <canvas id="bzChart"></canvas>
+</div>
 
-    function getYAxisRange(bzValues) {
-      const min = Math.min(...bzValues);
-      const max = Math.max(...bzValues);
-      const absMax = Math.max(Math.abs(min), Math.abs(max));
-      let yLimit;
-      if (absMax <= 5) yLimit = 5;
-      else if (absMax <= 10) yLimit = 10;
-      else if (absMax <= 20) yLimit = 20;
-      else if (absMax <= 50) yLimit = 50;
-      else yLimit = 100;
-      return { yMin: -yLimit, yMax: yLimit };
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const canvas = document.getElementById('bzChart');
+    const ctx = canvas.getContext('2d');
+    const bzInfo = document.getElementById('bzInfo');
+    const auroraMessage = document.getElementById('auroraMessage');
+    const kpInfo = document.getElementById('kpInfo');
+    const kpMessage = document.getElementById('kpMessage');
+    let chart;
+
+    function calculateBzH(bzValues) {
+      const recent = bzValues.slice(-60);
+      const bzH = recent.filter(bz => bz < 0).reduce((sum, bz) => sum + (-bz / 60), 0);
+      return parseFloat(bzH.toFixed(2));
     }
 
-    function fetchDarkTimes() {
-      const todayKey = new Date().toISOString().slice(5, 10);
-      const times = twilightTimes[todayKey];
-      const darkInfoEl = document.getElementById('darkInfo');
-      const countdownEl = document.getElementById('countdown');
-
-      if (times && times.start && times.end) {
-        darkInfoEl.textContent = `🌒 It's dark enough for auroras in Reykjavík between ${times.start} and ${times.end}`;
-        function updateCountdown() {
-          const now = new Date();
-          const [h, m] = times.start.split(':').map(Number);
-          const target = new Date();
-          target.setHours(h, m, 0, 0);
-          if (target <= now) target.setDate(target.getDate() + 1);
-          const diff = target - now;
-          const hours = Math.floor(diff / 3600000);
-          const minutes = Math.floor((diff % 3600000) / 60000);
-          countdownEl.textContent = `🕒 Darkness begins in ${hours}h ${minutes}m`;
-        }
-        updateCountdown();
-        setInterval(updateCountdown, 60000);
-      } else {
-        darkInfoEl.textContent = '🌒 Darkness time not available';
-        countdownEl.textContent = '';
-      }
+    function getKpMessage(kp) {
+      if (kp === 0) return "Aurora might form low to the north if Bz goes negative";
+      if (kp === 1) return "Aurora might form Low to the northern horizon";
+      if (kp === 2) return "Aurora might form to the north";
+      if (kp === 3) return "Aurora will form to the north if Bz is negative";
+      if (kp === 4 || kp === 5) return "Aurora will form to the North and Overhead";
+      return "✨ Aurora can form anywhere - Let's dance to the disco lights!";
     }
 
-    document.addEventListener("DOMContentLoaded", function () {
-      const canvas = document.getElementById('bzChart');
-      const context = canvas.getContext('2d');
-      const bzInfo = document.getElementById('bzInfo');
-      const auroraMessage = document.getElementById('auroraMessage');
-      const kpInfo = document.getElementById('kpInfo');
-      const kpMessage = document.getElementById('kpMessage');
-      let chart;
-      let lastRange = "";
+    function getYAxisRange(values) {
+      const min = Math.min(...values), max = Math.max(...values);
+      const range = Math.max(Math.abs(min), Math.abs(max));
+      if (range <= 5) return { yMin: -5, yMax: 5 };
+      if (range <= 10) return { yMin: -10, yMax: 10 };
+      if (range <= 20) return { yMin: -20, yMax: 20 };
+      if (range <= 50) return { yMin: -50, yMax: 50 };
+      return { yMin: -100, yMax: 100 };
+    }
 
-      async function fetchBzData() {
-        const res = await fetch('https://services.swpc.noaa.gov/products/solar-wind/mag-2-hour.json');
-        const data = await res.json();
-        const rows = data.slice(1).filter(row => !isNaN(parseFloat(row[3])));
-        const times = rows.map(row => row[0].slice(11, 16));
-        const bzValues = rows.map(row => parseFloat(row[3]));
-        return { times, bzValues };
-      }
+    async function fetchBzData() {
+      const res = await fetch('https://services.swpc.noaa.gov/products/solar-wind/mag-2-hour.json');
+      const data = await res.json();
+      const rows = data.slice(1).filter(row => !isNaN(parseFloat(row[3])));
+      return {
+        times: rows.map(row => row[0].slice(11, 16)),
+        values: rows.map(row => parseFloat(row[3]))
+      };
+    }
 
-      async function fetchKpData() {
-        const res = await fetch("https://services.swpc.noaa.gov/products/noaa-planetary-k-index.json");
-        const data = await res.json();
-        return parseInt(data[data.length - 1][1]);
-      }
+    async function fetchKpData() {
+      const res = await fetch('https://services.swpc.noaa.gov/products/noaa-planetary-k-index.json');
+      const data = await res.json();
+      return parseInt(data[data.length - 1][1]);
+    }
 
-      function calculateBzH(bzValues) {
-        const oneHourValues = bzValues.slice(-60);
-        const bzH = oneHourValues.filter(bz => bz < 0).reduce((acc, bz) => acc + (-bz / 60), 0);
-        return parseFloat(bzH.toFixed(2));
-      }
+    async function updateChart() {
+      const { times, values } = await fetchBzData();
+      const kp = await fetchKpData();
+      const bzH = calculateBzH(values);
+      const { yMin, yMax } = getYAxisRange(values);
 
-      async function updateChart() {
-        const { times, bzValues } = await fetchBzData();
-        const kp = await fetchKpData();
-        if (!bzValues.length || kp === null) return;
+      const bzClass = bzH > 6 ? "pulseGlowEpic" :
+                      bzH > 4.5 ? "pulseGlowStrong" :
+                      bzH > 3 ? "pulseGlowModerate" : "pulseGlowWeak";
+      const bzColor = bzH > 6 ? "red" :
+                      bzH > 4.5 ? "gold" :
+                      bzH > 3 ? "#00ff66" : "#66ccff";
 
-        const bzH = calculateBzH(bzValues);
-        const bzHMsg = bzH > 6 ? "Strong aurora conditions – Get out now!" :
-                        bzH > 4.5 ? "Strong aurora likely" :
-                        bzH > 3 ? "Moderate aurora likely" :
-                        bzH > 1.5 ? "Faint aurora possible" :
-                        bzH > 0 ? "Weak aurora potential" : "No aurora potential";
+      bzInfo.innerHTML = `Current -BzH (1hr): <span style="color: ${bzColor}; font-weight: bold; animation: ${bzClass} 2s infinite;">${bzH}</span> <span title="-BzH (Negative Bz Hours) measures aurora-driving magnetic activity, coined by Kolbeinn Helgi Kristjansson." style="cursor: help;">❓</span>`;
+      auroraMessage.textContent = bzH > 6 ? "✨ Strong aurora conditions – Get out now!" :
+                                bzH > 4.5 ? "Strong aurora likely" :
+                                bzH > 3 ? "Moderate aurora likely" :
+                                bzH > 1.5 ? "Faint aurora possible" :
+                                bzH > 0 ? "Weak aurora potential" : "No aurora potential right now";
 
-        bzInfo.textContent = `Current -BzH (1hr): ${bzH}`;
-        auroraMessage.textContent = bzHMsg;
-        kpInfo.textContent = `Kp index: ${kp}`;
-        kpMessage.textContent = kp >= 5 ? "Aurora overhead and to the south" :
-                              kp >= 4 ? "Aurora overhead" :
-                              kp >= 2 ? "Aurora to the north" :
-                              "Low aurora chances";
+      kpInfo.innerHTML = `Kp index: <span style="color: ${bzColor}; font-weight: bold; animation: ${bzClass} 2s infinite;">${kp}</span>`;
+      kpMessage.textContent = getKpMessage(kp);
 
-        const { yMin, yMax } = getYAxisRange(bzValues);
-        if (!chart) {
-          chart = new Chart(context, {
-            type: 'line',
-            data: {
-              labels: times,
-              datasets: [{
-                label: 'IMF Bz (nT)',
-                data: bzValues,
-                borderColor: 'white',
-                backgroundColor: 'rgba(255,255,255,0.1)',
-                pointRadius: 0,
-                tension: 0.3
-              }]
-            },
-            options: {
-              responsive: true,
-              maintainAspectRatio: false,
-              scales: {
-                x: { ticks: { color: 'white' }, grid: { color: 'gray' } },
-                y: {
-                  min: yMin, max: yMax,
-                  ticks: { stepSize: 10, color: 'white' },
-                  grid: { color: 'gray' }
-                }
-              },
-              plugins: {
-                legend: { labels: { color: 'white' } }
+      if (!chart) {
+        chart = new Chart(ctx, {
+          type: 'line',
+          data: {
+            labels: times,
+            datasets: [{
+              label: 'IMF Bz (nT)',
+              data: values,
+              borderColor: 'white',
+              backgroundColor: 'rgba(255,255,255,0.1)',
+              pointRadius: 0,
+              tension: 0.3
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+              x: { ticks: { color: 'white' }, grid: { color: 'gray' } },
+              y: {
+                min: yMin,
+                max: yMax,
+                ticks: { color: 'white' },
+                grid: { color: 'gray' }
               }
-            }
-          });
-        } else {
-          chart.data.labels = times;
-          chart.data.datasets[0].data = bzValues;
-          chart.options.scales.y.min = yMin;
-          chart.options.scales.y.max = yMax;
-          chart.update();
-        }
+            },
+            plugins: { legend: { labels: { color: 'white' } } }
+          }
+        });
+      } else {
+        chart.data.labels = times;
+        chart.data.datasets[0].data = values;
+        chart.options.scales.y.min = yMin;
+        chart.options.scales.y.max = yMax;
+        chart.update();
       }
+    }
 
-      updateChart();
-      setInterval(updateChart, 5 * 60 * 1000);
-      fetchDarkTimes();
-    });
-  </script>
+    function computeDarkTimes() {
+      const now = new Date();
+      const times = SunCalc.getTimes(now, 64.1355, -21.8954);
+      const dusk = times.night, dawn = times.nightEnd;
+      const fmt = d => d ? d.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}) : '';
+      if (dusk && dawn) {
+        document.getElementById('darkInfo').textContent = `🌒 It's dark enough for auroras in Reykjavík between ${fmt(dusk)} and ${fmt(dawn)}`;
+        const countdown = () => {
+          const now2 = new Date();
+          const target = dusk < now2 ? new Date(dusk.getTime() + 86400000) : dusk;
+          const diff = target - now2;
+          const hrs = Math.floor(diff / 3600000), mins = Math.floor((diff % 3600000) / 60000);
+          document.getElementById('countdown').textContent = `🕒 Darkness begins in ${hrs}h ${mins}m`;
+        };
+        countdown();
+        setInterval(countdown, 60000);
+      }
+    }
+
+    updateChart();
+    setInterval(updateChart, 5 * 60 * 1000);
+    computeDarkTimes();
+    setInterval(computeDarkTimes, 60 * 60 * 1000);
+  });
+</script>
+
+<div style="margin: 40px auto 60px; max-width: 600px; padding: 20px;">
+  <span style="font-size: 1rem; font-weight: 600; color: #00ffcc;">📣 Share this forecast:</span>
+  <div style="margin-top: 10px; display: flex; justify-content: center; flex-wrap: wrap; gap: 10px;">
+    <a href="https://twitter.com/intent/tweet?text=Check%20out%20this%20epic%20real-time%20aurora%20forecast%20by%20Aurora%20Viking!%20https%3A%2F%2Fwww.auroraviking.com%2Ftheauroraforecast" target="_blank" style="background: #1da1f2; padding: 10px 15px; color: white; border-radius: 999px; text-decoration: none; font-weight: bold;">🐦 Tweet</a>
+    <a href="https://api.whatsapp.com/send?text=Check%20out%20this%20epic%20real-time%20aurora%20forecast%20by%20Aurora%20Viking!%20https%3A%2F%2Fwww.auroraviking.com%2Ftheauroraforecast" target="_blank" style="background: #25D366; padding: 10px 15px; color: white; border-radius: 999px; text-decoration: none; font-weight: bold;">📱 WhatsApp</a>
+    <a href="https://www.facebook.com/sharer/sharer.php?u=https%3A%2F%2Fwww.auroraviking.com%2Ftheauroraforecast" target="_blank" style="background: #1877f2; padding: 10px 15px; color: white; border-radius: 999px; text-decoration: none; font-weight: bold;">📘 Facebook</a>
+  </div>
+</div>
+
 </body>
 </html>
