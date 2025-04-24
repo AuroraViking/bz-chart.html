@@ -76,9 +76,12 @@
 <div class="top-bar">
   <div class="top-left">
     <div id="darkCombined" class="info-box">
-      🌒 Calculating when it gets dark in Reykjavík...
-      <span id="countdown">🕒 Calculating countdown...</span>
-    </div>
+  🌒 Calculating when it gets dark in Reykjavík...
+  <span id="countdown">🕒 Calculating countdown...</span>
+</div>
+<div id="probabilityMeter" class="info-box" style="max-width: 400px; margin: 10px auto; font-size: 1.1rem; text-align: center;">
+  📈 Aurora Probability: <span id="auroraProbability">Calculating...</span>
+</div>
   </div>
   <div class="logo-container">
     <img src="White.svg" alt="Aurora Viking logo" style="height: 60px; filter: drop-shadow(0 0 10px #00ffcc);" />
@@ -93,10 +96,10 @@
       <span id="kpMessage"></span>
     </div>
   </div>
-</div>
 
 <div class="chart-container" id="chartWrapper">
   <canvas id="bzChart"></canvas>
+</div>
 </div>
 
 <!-- JavaScript remains unchanged below -->
@@ -212,8 +215,22 @@ document.addEventListener("DOMContentLoaded", function () {
       bzH > 0 ? "Weak aurora possible in the next hours" : "No aurora potential right now";
     const { yMin, yMax, tag } = getYAxisRange(bzValues);
 
-    bzInfo.innerHTML = `Current -BzH (1hr): <span style="color: white; font-weight: bold;">${bzH}</span>`;
+    bzInfo.innerHTML = `Current -BzH (1hr): <span style=\"color: white; font-weight: bold;\">${bzH}</span>`;
     auroraMessage.textContent = bzHMessage;
+
+    // Aurora Probability Calculation
+    const score = Math.min(10, Math.round((bzH + kp / 2) * 1.2));
+    let level = 'Unknown';
+    let color = '#ccc';
+    if (score >= 9) { level = '🔴 Extreme'; color = 'red'; }
+    else if (score >= 7) { level = '🟠 High'; color = 'orange'; }
+    else if (score >= 4) { level = '🟡 Moderate'; color = 'gold'; }
+    else if (score >= 1) { level = '🟢 Low'; color = '#00ffcc'; }
+    else { level = '⚪️ Minimal'; color = '#aaa'; }
+
+    const probEl = document.getElementById('auroraProbability');
+    probEl.textContent = level;
+    probEl.style.color = color;
 
     kpInfo.innerHTML = `Kp index: <span style="color: white; font-weight: bold;">${kp}</span>`;
     kpMessage.textContent = getKpMessage(kp);
@@ -291,4 +308,3 @@ document.addEventListener("DOMContentLoaded", function () {
 
 </body>
 </html>
-
