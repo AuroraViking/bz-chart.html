@@ -135,24 +135,14 @@
         return "Kp index not available";
       }
 
-      function drawChart(times, bzValues, yMin, yMax, etaLabel, minutesToEarth, etaIndex) {
+      function drawChart(times, bzValues, yMin, yMax) {
         if (chart) chart.destroy();
         chart = new Chart(context, {
           type: 'line',
           data: {
             labels: times,
             datasets: [
-            {
-              type: 'line',
-              label: etaLabel,
-              data: etaIndex >= 0 && etaIndex < times.length
-                ? new Array(times.length).fill(null).map((_, i) => i === etaIndex ? 0 : null)
-                : new Array(times.length).fill(null),
-              borderColor: 'rgba(0, 255, 255, 0.6)',
-              borderWidth: 2,
-              pointRadius: 0,
-              borderDash: [5, 5]
-            },
+            
             {
               label: 'IMF Bz (nT)',
               data: bzValues,
@@ -200,25 +190,10 @@
         return { yMin: -100, yMax: 100, tag: "wide" };
       }
 
-      async function fetchSpeedData() {
-  const res = await fetch('https://services.swpc.noaa.gov/products/solar-wind/plasma-2-hour.json');
-  const data = await res.json();
-  const lastRow = data[data.length - 1];
-  const speed = parseFloat(lastRow[2]); // km/s
-  return speed;
-}
-
+      
 async function updateChart() {
-  const speed = await fetchSpeedData();
-  let minutesToEarth = speed > 0 ? (1.5e6 / (speed * 1000)) / 60 : 60;
-  minutesToEarth = Math.round(minutesToEarth);
-  console.log('Solar wind speed (km/s):', speed);
-  console.log('Estimated impact time (minutes):', minutesToEarth);
-  const { times, bzValues } = await fetchBzData();
-  console.log('Chart data points:', times.length);
-  const etaIndex = Math.max(0, Math.min(times.length - 1, times.length - minutesToEarth));
-  console.log('ETA line index:', etaIndex);
-  const etaLabel = `Impact ETA: ~${minutesToEarth} min`;
+        const { times, bzValues } = await fetchBzData();
+  
         const kp = await fetchKpData();
         if (!bzValues.length || kp === null) return;
 
@@ -235,15 +210,11 @@ async function updateChart() {
         setTheme(bzH);
 
         if (!chart || lastRange !== tag) {
-          drawChart(times, bzValues, yMin, yMax, etaLabel, minutesToEarth, etaIndex);
+          drawChart(times, bzValues, yMin, yMax);
           lastRange = tag;
         } else {
           chart.data.labels = times;
-          chart.data.datasets[0].data = etaIndex >= 0 && etaIndex < times.length
-            ? new Array(times.length).fill(null).map((_, i) => i === etaIndex ? 0 : null)
-            : new Array(times.length).fill(null);
-          chart.data.datasets[0].label = etaLabel;
-          chart.data.datasets[1].data = bzValues;
+          chart.data.datasets[0].data = bzValues;
           chart.update();
         }
       }
