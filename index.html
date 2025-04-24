@@ -230,24 +230,35 @@ document.addEventListener("DOMContentLoaded", function () {
 
   async function fetchDarkTimes() {
     try {
-      const res = await fetch("https://api.open-meteo.com/v1/forecast?latitude=64.1355&longitude=-21.8954&daily=astronomical_twilight_begin,astronomical_twilight_end&timezone=auto");
+      const lat = 64.1355, lon = -21.8954;
+      const dateStr = new Date().toISOString().split('T')[0];
+      const url = `https://api.sunrise-sunset.org/json?lat=${lat}&lng=${lon}&date=${dateStr}&formatted=0&tzid=Atlantic/Reykjavik`;
+      const res = await fetch(url);
       const data = await res.json();
-      const twilightStart = data.daily?.astronomical_twilight_begin?.[0] || null;
-      const twilightEnd = data.daily?.astronomical_twilight_end?.[0] || null;
 
-      const darkMsg = twilightStart && twilightEnd
-        ? `🌒 It's dark enough for auroras in Reykjavík between ${twilightStart.slice(11, 16)} and ${twilightEnd.slice(11, 16)}`
-        : '🌒 Darkness time not available';
-      document.getElementById('darkCombined').firstChild.textContent = darkMsg;
+      const astroTwilightEvening = data.results?.astronomical_twilight_end || null;
+      const astroTwilightMorning = data.results?.astronomical_twilight_begin || null;
 
-      if (twilightStart) {
+      const now = new Date();
+      const evening = new Date(astroTwilightEvening);
+      const morning = new Date(astroTwilightMorning);
+      let darkMsg = '';
+
+      if (!isNaN(evening.getTime()) && !isNaN(morning.getTime()) && evening < morning) {
+        darkMsg = `🌒 Dark enough tonight in Reykjavík from ${evening.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })} to ${morning.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}`;
+      } else if (!isNaN(morning.getTime()) && morning > now) {
+        darkMsg = `🌒 Astronomical twilight starts at ${morning.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}`;
+      } else {
+        darkMsg = '☀️ It won’t get dark enough for auroras in Reykjavík tonight';
+      }
+
+      document.getElementById('darkCombined').innerHTML = `${darkMsg}<span id='countdown'></span>`;
+
+      if (!isNaN(evening.getTime()) && evening > now) {
         const countdownElement = document.getElementById('countdown');
         const updateCountdown = () => {
           const now = new Date();
-          const [hour, minute] = twilightStart.slice(11, 16).split(':').map(Number);
-          const target = new Date(now);
-          target.setHours(hour, minute, 0);
-          if (target < now) target.setDate(target.getDate() + 1);
+          const target = evening;
           const diff = target - now;
           const hours = Math.floor(diff / 1000 / 60 / 60);
           const minutes = Math.floor((diff / 1000 / 60) % 60);
@@ -258,7 +269,7 @@ document.addEventListener("DOMContentLoaded", function () {
       }
     } catch (err) {
       console.error("Failed to fetch twilight times:", err);
-      document.getElementById('darkCombined').firstChild.textContent = '🌒 Darkness time not available';
+      document.getElementById('darkCombined').innerHTML = '🌒 Darkness time not available<span id="countdown"></span>';
     }
   }
 
@@ -267,7 +278,6 @@ document.addEventListener("DOMContentLoaded", function () {
   setInterval(updateChart, 5 * 60 * 1000);
   setInterval(fetchDarkTimes, 60 * 60 * 1000);
 });
-</script>
 </script>
 
 <div style="margin: 40px auto 60px; max-width: 600px; padding: 20px; background: transparent; border-radius: 12px;">
@@ -281,3 +291,4 @@ document.addEventListener("DOMContentLoaded", function () {
 
 </body>
 </html>
+
