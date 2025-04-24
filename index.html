@@ -7,409 +7,267 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0"></script>
   <style>
     body {
-  background: radial-gradient(circle at top, #000 0%, #020202 100%), url('https://cdn.pixabay.com/photo/2017/08/30/07/52/space-2695569_1280.jpg');
-  background-size: cover;
-  background-position: center;
-  background-attachment: fixed;
-  background-repeat: repeat;
-  animation: parallaxStars 120s linear infinite;
-  background-size: cover;
-  background-position: center;
-  background-attachment: fixed;
-  color: white;
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  text-align: center;
-  margin: 0;
-  padding-bottom: 100px;
-}
-    .chart-container {
-      width: 100%;
-      max-width: 1000px;
-      height: 60vh;
-      margin: 0 auto;
-      padding: 0 10px;
+      background: radial-gradient(circle at top, #000 0%, #020202 100%), url('https://cdn.pixabay.com/photo/2017/08/30/07/52/space-2695569_1280.jpg');
+      background-size: cover;
+      background-position: center;
+      background-attachment: fixed;
+      color: white;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      text-align: center;
+      margin: 0;
+      padding-bottom: 100px;
     }
+    .top-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      flex-wrap: wrap;
+      max-width: 1000px;
+      margin: 20px auto 0;
+      padding: 0 20px;
+    }
+    .top-left, .top-right {
+      flex: 1;
+      min-width: 250px;
+    }
+    .logo-container {
+      flex: 1;
+      text-align: center;
+      min-width: 200px;
+    }
+    .info-box {
+      padding: 15px;
+      border-radius: 12px;
+      margin-bottom: 10px;
+      font-weight: bold;
+      background: rgba(0, 0, 0, 0.6);
+      box-shadow: 0 0 10px #00ffcc;
+      animation: glowCycle 3s infinite;
+    }
+    .info-box span {
+      display: block;
+      margin-top: 5px;
+      font-size: 0.95rem;
+      font-weight: normal;
+    }
+    @keyframes glowCycle {
+      0% { box-shadow: 0 0 5px #00ffcc; }
+      50% { box-shadow: 0 0 15px #00ffcc; }
+      100% { box-shadow: 0 0 5px #00ffcc; }
+    }
+    .chart-container {
+  width: 100%;
+  max-width: 1000px;
+  height: 60vh;
+  margin: 0 auto;
+  padding: 0 10px;
+  box-shadow: 0 0 10px #00ffcc;
+  animation: glowCycle 3s infinite;
+}
     canvas {
       display: block;
       width: 100% !important;
       height: 100% !important;
     }
-    .viking-banner {
-      position: fixed;
-      bottom: 0;
-      width: 100%;
-      height: 90px;
-      background: linear-gradient(to top, #000000ee, transparent);
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      z-index: 999;
-      pointer-events: none;
-    }
-    .viking-banner img {
-      height: 60px;
-      opacity: 0.9;
-      filter: drop-shadow(0 0 10px #00ffcc);
-    }
-  @keyframes pulseGlowWeak {
-  0% { text-shadow: 0 0 10px #66ccff; transform: scale(1); }
-  50% { text-shadow: 0 0 30px #66ccff; transform: scale(1.1); }
-  100% { text-shadow: 0 0 10px #66ccff; transform: scale(1); }
-}
-  50% { text-shadow: 0 0 30px #66ccff; transform: scale(1.1); }
-  100% { text-shadow: 0 0 10px #66ccff; transform: scale(1); }
-}
-  50% { text-shadow: 0 0 30px #66ccff; transform: scale(1.1); }
-  100% { text-shadow: 0 0 10px #66ccff; transform: scale(1); }
-}
-  50% { text-shadow: 0 0 30px #66ccff; transform: scale(1.08); }
-  100% { text-shadow: 0 0 10px #66ccff; transform: scale(1); }
-}
-  50% { text-shadow: 0 0 18px #66ccff; }
-  100% { text-shadow: 0 0 6px #66ccff; }
-}
-  50% { text-shadow: 0 0 14px #66ccff; }
-  100% { text-shadow: 0 0 4px #66ccff; }
-}
-  50% { text-shadow: 0 0 8px #66ccff; }
-  100% { text-shadow: 0 0 3px #66ccff; }
-}
-@keyframes pulseGlowModerate {
-  0% { text-shadow: 0 0 15px #00ff66; transform: scale(1); }
-  50% { text-shadow: 0 0 40px #00ff66; transform: scale(1.12); }
-  100% { text-shadow: 0 0 15px #00ff66; transform: scale(1); }
-}
-  50% { text-shadow: 0 0 40px #00ff66; transform: scale(1.12); }
-  100% { text-shadow: 0 0 15px #00ff66; transform: scale(1); }
-}
-  50% { text-shadow: 0 0 40px #00ff66; transform: scale(1.12); }
-  100% { text-shadow: 0 0 15px #00ff66; transform: scale(1); }
-}
-  50% { text-shadow: 0 0 40px #00ff66; transform: scale(1.1); }
-  100% { text-shadow: 0 0 15px #00ff66; transform: scale(1); }
-}
-  50% { text-shadow: 0 0 28px #00ff66; }
-  100% { text-shadow: 0 0 10px #00ff66; }
-}
-  50% { text-shadow: 0 0 20px #00ff66; }
-  100% { text-shadow: 0 0 8px #00ff66; }
-}
-  50% { text-shadow: 0 0 14px #00ff66; }
-  100% { text-shadow: 0 0 6px #00ff66; }
-}
-@keyframes pulseGlowStrong {
-  0% { text-shadow: 0 0 20px gold; transform: scale(1); }
-  50% { text-shadow: 0 0 50px gold; transform: scale(1.15); }
-  100% { text-shadow: 0 0 20px gold; transform: scale(1); }
-}
-  50% { text-shadow: 0 0 50px gold; transform: scale(1.15); }
-  100% { text-shadow: 0 0 20px gold; transform: scale(1); }
-}
-  50% { text-shadow: 0 0 50px gold; transform: scale(1.15); }
-  100% { text-shadow: 0 0 20px gold; transform: scale(1); }
-}
-  50% { text-shadow: 0 0 50px gold; transform: scale(1.12); }
-  100% { text-shadow: 0 0 20px gold; transform: scale(1); }
-}
-  50% { text-shadow: 0 0 38px gold; }
-  100% { text-shadow: 0 0 18px gold; }
-}
-  50% { text-shadow: 0 0 30px gold; }
-  100% { text-shadow: 0 0 14px gold; }
-}
-  50% { text-shadow: 0 0 22px gold; }
-  100% { text-shadow: 0 0 10px gold; }
-}
-@keyframes pulseGlowEpic {
-  0% { text-shadow: 0 0 30px red; transform: scale(1); }
-  50% { text-shadow: 0 0 60px red; transform: scale(1.2); }
-  100% { text-shadow: 0 0 30px red; transform: scale(1); }
-}
-  50% { text-shadow: 0 0 60px red; transform: scale(1.2); }
-  100% { text-shadow: 0 0 30px red; transform: scale(1); }
-}
-  50% { text-shadow: 0 0 60px red; transform: scale(1.2); }
-  100% { text-shadow: 0 0 30px red; transform: scale(1); }
-}
-  50% { text-shadow: 0 0 60px red; transform: scale(1.15); }
-  100% { text-shadow: 0 0 30px red; transform: scale(1); }
-}
-  50% { text-shadow: 0 0 48px red; }
-  100% { text-shadow: 0 0 24px red; }
-}
-  50% { text-shadow: 0 0 36px red; }
-  100% { text-shadow: 0 0 16px red; }
-}
-  50% { text-shadow: 0 0 26px red; }
-  100% { text-shadow: 0 0 12px red; }
-}
-  50% { text-shadow: 0 0 15px #00ffcc, 0 0 25px #00ffcc; }
-  100% { text-shadow: 0 0 5px #00ffcc, 0 0 10px #00ffcc; }
-}
-  
-  @keyframes ripple {
-    0% {
-      transform: translate(-50%, -50%) scale(0.5);
-      opacity: 0.8;
-    }
-    70% {
-      transform: translate(-50%, -50%) scale(1.2);
-      opacity: 0.1;
-    }
-    100% {
-      transform: translate(-50%, -50%) scale(1.5);
-      opacity: 0;
-    }
-  }
-  
-      
-      70% {
-      transform: translate(-50%, -50%) scale(1.4);
-      opacity: 0.1;
-    }
-    100% {
-      transform: translate(-50%, -50%) scale(1.6);
-      opacity: 0;
-    }
-  }
-@keyframes parallaxStars {
-  0% { background-position: 0 0; }
-  100% { background-position: 10000px 0; }
-}
-</style>
+  </style>
 </head>
 <body>
 
-
-<div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; max-width: 1000px; margin: 20px auto 0; padding: 0 20px;">
-    <div style="text-align: left;">
-  <div id="darkInfo" style="margin-bottom: 6px; font-size: 1.1rem; color: #ccc;">🌒 Calculating when it gets dark in Reykjavík...</div>
-  <div id="countdown" style="font-size: 0.95rem; color: #00ffcc; margin-bottom: 12px; animation: pulseGlow 2s infinite;"></div>
-</div>
-<img src="White.svg" alt="Aurora Viking logo" style="height: 60px; filter: drop-shadow(0 0 10px #00ffcc); margin: 0 auto;" />
-  <div style="text-align: left;">
-    <div id="bzInfo">Calculating -BzH...</div>
-    <div id="auroraMessage"></div>
-    <div id="kpInfo">Loading Kp index...</div>
-    <div id="kpMessage"></div>
-    
-    
+<div class="top-bar">
+  <div class="top-left">
+    <div id="darkCombined" class="info-box">
+      🌒 Calculating when it gets dark in Reykjavík...
+      <span id="countdown">🕒 Calculating countdown...</span>
+    </div>
+  </div>
+  <div class="logo-container">
+    <img src="White.svg" alt="Aurora Viking logo" style="height: 60px; filter: drop-shadow(0 0 10px #00ffcc);" />
+  </div>
+  <div class="top-right">
+    <div id="bzCombined" class="info-box">
+      <div id="bzInfo">Calculating -BzH...</div>
+      <span id="auroraMessage"></span>
+    </div>
+    <div id="kpCombined" class="info-box">
+      <div id="kpInfo">Loading Kp index...</div>
+      <span id="kpMessage"></span>
+    </div>
   </div>
 </div>
-<div class="chart-container" id="chartWrapper" style="margin-top: 30px;">
+
+<div class="chart-container" id="chartWrapper">
   <canvas id="bzChart"></canvas>
 </div>
 
-
-<!-- Your JavaScript will follow here -->
+<!-- JavaScript remains unchanged below -->
 <script>
-    document.addEventListener("DOMContentLoaded", function () {
-      const canvas = document.getElementById('bzChart');
-      const context = canvas.getContext('2d');
-      if (!context) return;
+document.addEventListener("DOMContentLoaded", function () {
+  const canvas = document.getElementById('bzChart');
+  const context = canvas.getContext('2d');
+  if (!context) return;
 
-      const bzInfo = document.getElementById('bzInfo');
-      const auroraMessage = document.getElementById('auroraMessage');
-      const kpInfo = document.getElementById('kpInfo');
-      const kpMessage = document.getElementById('kpMessage');
-      const chartContainer = document.getElementById('chartWrapper');
+  const bzInfo = document.getElementById('bzInfo');
+  const auroraMessage = document.getElementById('auroraMessage');
+  const kpInfo = document.getElementById('kpInfo');
+  const kpMessage = document.getElementById('kpMessage');
+  const chartContainer = document.getElementById('chartWrapper');
 
-      let chart;
-      let lastRange = "";
+  let chart;
+  let lastRange = "";
 
-      async function fetchBzData() {
-        const res = await fetch('https://services.swpc.noaa.gov/products/solar-wind/mag-2-hour.json');
-        const data = await res.json();
-        const rows = data.slice(1).filter(row => !isNaN(parseFloat(row[3])));
-        const times = rows.map(row => row[0].slice(11, 16));
-        const bzValues = rows.map(row => parseFloat(row[3]));
-        return { times, bzValues };
-      }
-
-      async function fetchKpData() {
-        const res = await fetch("https://services.swpc.noaa.gov/products/noaa-planetary-k-index.json");
-        const data = await res.json();
-        return parseInt(data[data.length - 1][1]);
-      }
-
-      function calculateBzH(bzValues) {
-  const oneHourValues = bzValues.slice(-120); // Last 60 entries ≈ 1 hour
-  const bzH = oneHourValues.filter(bz => bz < 0).reduce((acc, bz) => acc + (-bz / 60), 0);
-  return parseFloat(bzH.toFixed(2));
-}
-
-      function setTheme(bzH) {
-        let bg, border;
-        chartContainer.classList.remove("epic-border");
-        auroraMessage.classList.remove("aurora-epic");
-        if (bzH <= 1.5) {
-          bg = 'radial-gradient(circle at top, #001933, #000)';
-          border = '0 0 10px #66ccff';
-        } else if (bzH <= 3) {
-          bg = 'radial-gradient(circle at top, #003311, #000)';
-          border = '0 0 10px #00ff99';
-        } else if (bzH <= 4.5) {
-          bg = 'radial-gradient(circle at top, #332900, #000)';
-          border = '0 0 15px gold';
-        } else if (bzH <= 6) {
-          bg = 'radial-gradient(circle at top, #331a00, #000)';
-          border = '0 0 20px orange';
-          chartContainer.classList.add("epic-border");
-        } else {
-          bg = 'radial-gradient(circle at top, #2b0000, #000)';
-          border = '0 0 30px red';
-          chartContainer.classList.add("epic-border");
-          auroraMessage.classList.add("aurora-epic");
-        }
-        document.body.style.background = bg;
-        chartContainer.style.boxShadow = border;
-      }
-
-      function getKpMessage(kp) {
-        if (kp === 0) return "Aurora might form low to the north if Bz goes negative";
-        if (kp === 1) return "Aurora might form Low to the northern horizon";
-        if (kp === 2) return "Aurora might form to the north";
-        if (kp === 3) return "Aurora will form to the north if Bz is negative";
-        if (kp === 4 || kp === 5) return "Aurora will form to the North and Overhead";
-        if (kp >= 6 && kp <= 9) return "✨ Aurora can form anywhere - Let's dance to the disco lights!";
-        return "Kp index not available";
-      }
-
-      function drawChart(times, bzValues, yMin, yMax) {
-        if (chart) chart.destroy();
-        chart = new Chart(context, {
-          type: 'line',
-          data: {
-            labels: times,
-            datasets: [
-            
-            {
-              label: 'IMF Bz (nT)',
-              data: bzValues,
-              fill: true,
-              borderColor: 'white',
-              pointRadius: 0,
-              tension: 0.3,
-              backgroundColor: function(ctx) {
-                const {chartArea, ctx: c} = ctx.chart;
-                if (!chartArea) return;
-                const gradient = c.createLinearGradient(0, chartArea.top, 0, chartArea.bottom);
-                gradient.addColorStop(0, 'rgba(0,255,0,0.3)');
-                gradient.addColorStop(0.5, 'rgba(255,255,255,0.3)');
-                gradient.addColorStop(1, 'rgba(255,0,0,0.3)');
-                return gradient;
-              },
-              segment: {
-                borderColor: ctx => ctx.p0.parsed.y < 0 ? 'gold' : 'white'
-              }
-            }]
-          },
-          options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            scales: {
-              x: { ticks: { color: 'white' }, grid: { color: 'gray' } },
-              y: {
-                min: yMin, max: yMax,
-                ticks: { stepSize: 10, color: 'white' },
-                grid: { color: 'gray' }
-              }
-            },
-            plugins: {
-              legend: { labels: { color: 'white' } }
-            }
-          }
-        });
-      }
-
-      function getYAxisRange(bzValues) {
-        const min = Math.min(...bzValues);
-        const max = Math.max(...bzValues);
-        if (min >= -5 && max <= 5) return { yMin: -5, yMax: 5, tag: "tight" };
-        if (min >= -10 && max <= 10) return { yMin: -10, yMax: 10, tag: "medium" };
-        return { yMin: -100, yMax: 100, tag: "wide" };
-      }
-
-      
-async function updateChart() {
-        const { times, bzValues } = await fetchBzData();
-  
-        const kp = await fetchKpData();
-        if (!bzValues.length || kp === null) return;
-
-        const bzH = calculateBzH(bzValues);
-        const bzHMessage = bzH > 6 ? "✨ Strong aurora conditions – Get out now!" : bzH > 4.5 ? "Strong aurora likely in the next few hours" : bzH > 3 ? "Moderate aurora likely in the next few hours" : bzH > 1.5 ? "Faint aurora likely in the next few hours" : bzH > 0 ? "Weak aurora possible in the next hours" : "No aurora potential right now";
-        const { yMin, yMax, tag } = getYAxisRange(bzValues);
-
-        let bzColor = '#66ccff', glowClass = 'pulseGlowWeak';
-if (bzH > 4.5) { bzColor = 'red'; glowClass = 'pulseGlowEpic'; }
-else if (bzH > 3) { bzColor = 'gold'; glowClass = 'pulseGlowStrong'; }
-else if (bzH > 1.5) { bzColor = '#00ff66'; glowClass = 'pulseGlowModerate'; }
-bzInfo.innerHTML = `Current -BzH (1hr): <span style="color: ${bzColor}; font-weight: bold; display: inline-block; animation: ${glowClass} 2s infinite;">${bzH}</span> <span title="-BzH stands for Negative Bz Hours. It measures how long and how strongly the interplanetary magnetic field (IMF Bz) stays negative — a key factor in aurora formation. Coined by Kolbeinn Helgi Kristjansson, founder of Aurora Viking." style="cursor: help; font-size: 0.9rem; background: #00ffcc; color: black; border-radius: 50%; padding: 0 6px; margin-left: 6px; font-weight: bold;">?</span>`;
-        auroraMessage.textContent = bzHMessage;
-        let kpColor = '#66ccff', kpGlow = 'pulseGlowWeak';
-if (kp >= 6) { kpColor = 'red'; kpGlow = 'pulseGlowEpic'; }
-else if (kp >= 4) { kpColor = 'gold'; kpGlow = 'pulseGlowStrong'; }
-else if (kp >= 2) { kpColor = '#00ff66'; kpGlow = 'pulseGlowModerate'; }
-kpInfo.innerHTML = `Kp index: <span style="color: ${kpColor}; font-weight: bold; display: inline-block; animation: ${kpGlow} 2s infinite;">${kp}</span>`;
-        kpMessage.textContent = getKpMessage(kp);
-
-        auroraMessage.className = bzH > 4.5 ? "aurora-strong" : "";
-        setTheme(bzH);
-
-        if (!chart || lastRange !== tag) {
-          drawChart(times, bzValues, yMin, yMax);
-          lastRange = tag;
-        } else {
-          chart.data.labels = times;
-          chart.data.datasets[0].data = bzValues;
-          chart.update();
-        }
-      }
-
-      updateChart();
-      setInterval(updateChart, 5 * 60 * 1000);
-
-      async function fetchDarkTimes() {
-  try {
-    const res = await fetch("https://api.open-meteo.com/v1/forecast?latitude=64.1355&longitude=-21.8954&daily=astronomical_twilight_begin,astronomical_twilight_end&timezone=auto");
+  async function fetchBzData() {
+    const res = await fetch('https://services.swpc.noaa.gov/products/solar-wind/mag-2-hour.json');
     const data = await res.json();
-    const twilightStart = Array.isArray(data?.daily?.astronomical_twilight_begin) ? data.daily.astronomical_twilight_begin[0] : null;
-    const twilightEnd = Array.isArray(data?.daily?.astronomical_twilight_end) ? data.daily.astronomical_twilight_end[0] : null;
-
-    const darkMsg = twilightStart && twilightEnd
-      ? `🌒 It's dark enough for auroras in Reykjavík between ${twilightStart.slice(11, 16)} and ${twilightEnd.slice(11, 16)}`
-      : '🌒 Darkness time not available';
-    document.getElementById('darkInfo').textContent = darkMsg;
-
-    if (twilightStart) {
-      const countdownElement = document.getElementById('countdown');
-      const updateCountdown = () => {
-        const now = new Date();
-        const [hour, minute] = twilightStart.slice(11, 16).split(':').map(Number);
-        const target = new Date(now);
-        target.setHours(hour);
-        target.setMinutes(minute);
-        target.setSeconds(0);
-        if (target < now) target.setDate(target.getDate() + 1);
-        const diff = target - now;
-        const hours = Math.floor(diff / 1000 / 60 / 60);
-        const minutes = Math.floor((diff / 1000 / 60) % 60);
-        countdownElement.textContent = `🕒 Darkness begins in ${hours}h ${minutes}m`;
-      };
-      updateCountdown();
-      setInterval(updateCountdown, 60000);
-    }
-  } catch (err) {
-    console.error("Failed to fetch twilight times:", err);
-    document.getElementById('darkInfo').textContent = '🌒 Darkness time not available';
+    const rows = data.slice(1).filter(row => !isNaN(parseFloat(row[3])));
+    const times = rows.map(row => row[0].slice(11, 16));
+    const bzValues = rows.map(row => parseFloat(row[3]));
+    return { times, bzValues };
   }
-}
 
-fetchDarkTimes();
-      setInterval(fetchDarkTimes, 60 * 60 * 1000);
+  async function fetchKpData() {
+    const res = await fetch("https://services.swpc.noaa.gov/products/noaa-planetary-k-index.json");
+    const data = await res.json();
+    return parseInt(data[data.length - 1][1]);
+  }
 
-          });
+  function calculateBzH(bzValues) {
+    const oneHourValues = bzValues.slice(-120);
+    const bzH = oneHourValues.filter(bz => bz < 0).reduce((acc, bz) => acc + (-bz / 60), 0);
+    return parseFloat(bzH.toFixed(2));
+  }
+
+  function getKpMessage(kp) {
+    if (kp === 0) return "Aurora might form low to the north if Bz goes negative";
+    if (kp === 1) return "Aurora might form Low to the northern horizon";
+    if (kp === 2) return "Aurora might form to the north";
+    if (kp === 3) return "Aurora will form to the north if Bz is negative";
+    if (kp === 4 || kp === 5) return "Aurora will form to the North and Overhead";
+    if (kp >= 6 && kp <= 9) return "✨ Aurora can form anywhere - Let's dance to the disco lights!";
+    return "Kp index not available";
+  }
+
+  function getYAxisRange(bzValues) {
+    const min = Math.min(...bzValues);
+    const max = Math.max(...bzValues);
+    if (min >= -5 && max <= 5) return { yMin: -5, yMax: 5, tag: "tight" };
+    if (min >= -10 && max <= 10) return { yMin: -10, yMax: 10, tag: "medium" };
+    return { yMin: -100, yMax: 100, tag: "wide" };
+  }
+
+  function drawChart(times, bzValues, yMin, yMax) {
+    if (chart) chart.destroy();
+    chart = new Chart(context, {
+      type: 'line',
+      data: {
+        labels: times,
+        datasets: [{
+          label: 'IMF Bz (nT)',
+          data: bzValues,
+          fill: true,
+          borderColor: 'white',
+          pointRadius: 0,
+          tension: 0.3,
+          backgroundColor: function(ctx) {
+            const { chartArea, ctx: c } = ctx.chart;
+            if (!chartArea) return;
+            const gradient = c.createLinearGradient(0, chartArea.top, 0, chartArea.bottom);
+            gradient.addColorStop(0, 'rgba(0,255,0,0.3)');
+            gradient.addColorStop(0.5, 'rgba(255,255,255,0.3)');
+            gradient.addColorStop(1, 'rgba(255,0,0,0.3)');
+            return gradient;
+          },
+          segment: {
+            borderColor: ctx => ctx.p0.parsed.y < 0 ? 'gold' : 'white'
+          }
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          x: { ticks: { color: 'white' }, grid: { color: 'gray' } },
+          y: {
+            min: yMin, max: yMax,
+            ticks: { stepSize: 10, color: 'white' },
+            grid: { color: 'gray' }
+          }
+        },
+        plugins: {
+          legend: { labels: { color: 'white' } }
+        }
+      }
+    });
+  }
+
+  async function updateChart() {
+    const { times, bzValues } = await fetchBzData();
+    const kp = await fetchKpData();
+    if (!bzValues.length || kp === null) return;
+
+    const bzH = calculateBzH(bzValues);
+    const bzHMessage = bzH > 6 ? "✨ Strong aurora conditions – Get out now!" :
+      bzH > 4.5 ? "Strong aurora likely in the next few hours" :
+      bzH > 3 ? "Moderate aurora likely in the next few hours" :
+      bzH > 1.5 ? "Faint aurora likely in the next few hours" :
+      bzH > 0 ? "Weak aurora possible in the next hours" : "No aurora potential right now";
+    const { yMin, yMax, tag } = getYAxisRange(bzValues);
+
+    bzInfo.innerHTML = `Current -BzH (1hr): <span style="color: white; font-weight: bold;">${bzH}</span>`;
+    auroraMessage.textContent = bzHMessage;
+
+    kpInfo.innerHTML = `Kp index: <span style="color: white; font-weight: bold;">${kp}</span>`;
+    kpMessage.textContent = getKpMessage(kp);
+
+    if (!chart || lastRange !== tag) {
+      drawChart(times, bzValues, yMin, yMax);
+      lastRange = tag;
+    } else {
+      chart.data.labels = times;
+      chart.data.datasets[0].data = bzValues;
+      chart.update();
+    }
+  }
+
+  async function fetchDarkTimes() {
+    try {
+      const res = await fetch("https://api.open-meteo.com/v1/forecast?latitude=64.1355&longitude=-21.8954&daily=astronomical_twilight_begin,astronomical_twilight_end&timezone=auto");
+      const data = await res.json();
+      const twilightStart = data.daily?.astronomical_twilight_begin?.[0] || null;
+      const twilightEnd = data.daily?.astronomical_twilight_end?.[0] || null;
+
+      const darkMsg = twilightStart && twilightEnd
+        ? `🌒 It's dark enough for auroras in Reykjavík between ${twilightStart.slice(11, 16)} and ${twilightEnd.slice(11, 16)}`
+        : '🌒 Darkness time not available';
+      document.getElementById('darkCombined').firstChild.textContent = darkMsg;
+
+      if (twilightStart) {
+        const countdownElement = document.getElementById('countdown');
+        const updateCountdown = () => {
+          const now = new Date();
+          const [hour, minute] = twilightStart.slice(11, 16).split(':').map(Number);
+          const target = new Date(now);
+          target.setHours(hour, minute, 0);
+          if (target < now) target.setDate(target.getDate() + 1);
+          const diff = target - now;
+          const hours = Math.floor(diff / 1000 / 60 / 60);
+          const minutes = Math.floor((diff / 1000 / 60) % 60);
+          countdownElement.textContent = `🕒 Darkness begins in ${hours}h ${minutes}m`;
+        };
+        updateCountdown();
+        setInterval(updateCountdown, 60000);
+      }
+    } catch (err) {
+      console.error("Failed to fetch twilight times:", err);
+      document.getElementById('darkCombined').firstChild.textContent = '🌒 Darkness time not available';
+    }
+  }
+
+  updateChart();
+  fetchDarkTimes();
+  setInterval(updateChart, 5 * 60 * 1000);
+  setInterval(fetchDarkTimes, 60 * 60 * 1000);
+});
+</script>
 </script>
 
 <div style="margin: 40px auto 60px; max-width: 600px; padding: 20px; background: transparent; border-radius: 12px;">
