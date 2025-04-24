@@ -201,7 +201,7 @@ async function updateChart() {
         const bzHMessage = bzH > 6 ? "✨ Strong aurora conditions – Get out now!" : bzH > 4.5 ? "Strong aurora likely in the next few hours" : bzH > 3 ? "Moderate aurora likely in the next few hours" : bzH > 1.5 ? "Faint aurora likely in the next few hours" : bzH > 0 ? "Weak aurora possible in the next hours" : "No aurora potential right now";
         const { yMin, yMax, tag } = getYAxisRange(bzValues);
 
-        bzInfo.innerHTML = `Current -BzH (1hr): ${bzH} <span title="BzH is a term coined by Kolbeinn Helgi Kristjansson, founder of Aurora Viking. It measures the total strength and duration of negative Bz — the longer and stronger the Bz is negative, the more aurora activity is likely." style="cursor: help; font-weight: bold; margin-left: 6px; color: #00ffcc;">ℹ️</span>`;
+        bzInfo.innerHTML = `Current -BzH (1hr): ${bzH} <span title="-BzH stands for Negative Bz Hours. It measures how long and how strongly the interplanetary magnetic field (IMF Bz) stays negative — a key factor in aurora formation. Coined by Kolbeinn Helgi Kristjansson, founder of Aurora Viking." style="cursor: help; font-size: 0.9rem; background: #00ffcc; color: black; border-radius: 50%; padding: 0 6px; margin-left: 6px; font-weight: bold;">?</span>`;
         auroraMessage.textContent = bzHMessage;
         kpInfo.textContent = `Kp index: ${kp}`;
         kpMessage.textContent = getKpMessage(kp);
@@ -224,11 +224,13 @@ async function updateChart() {
     });
 </script>
 
-<div style="margin-top: 20px;">
-  <span style="font-size: 1rem; font-weight: 600;">Share this forecast:</span><br />
-  <a href="https://twitter.com/intent/tweet?text=Check%20out%20this%20epic%20real-time%20aurora%20forecast%20by%20Aurora%20Viking!%20https%3A%2F%2Fwww.auroraviking.com%2Ftheauroraforecast" target="_blank" style="margin: 0 10px; color: #1da1f2;">🐦 Tweet</a>
-  <a href="https://api.whatsapp.com/send?text=Check%20out%20this%20epic%20real-time%20aurora%20forecast%20by%20Aurora%20Viking!%20https%3A%2F%2Fwww.auroraviking.com%2Ftheauroraforecast" target="_blank" style="margin: 0 10px; color: #25D366;">📱 WhatsApp</a>
-  <a href="https://www.facebook.com/sharer/sharer.php?u=https%3A%2F%2Fwww.auroraviking.com%2Ftheauroraforecast" target="_blank" style="margin: 0 10px; color: #1877f2;">📘 Facebook</a>
+<div style="margin: 40px auto 60px; max-width: 600px; padding: 20px; background: transparent; border-radius: 12px;">
+  <span style="font-size: 1rem; font-weight: 600; color: #00ffcc;">📣 Share this forecast:</span>
+  <div style="margin-top: 10px; display: flex; justify-content: center; flex-wrap: wrap; gap: 10px;">
+    <a href="https://twitter.com/intent/tweet?text=Check%20out%20this%20epic%20real-time%20aurora%20forecast%20by%20Aurora%20Viking!%20https%3A%2F%2Fwww.auroraviking.com%2Ftheauroraforecast" target="_blank" style="display: inline-flex; align-items: center; gap: 8px; padding: 10px 15px; background: #1da1f2; color: white; border-radius: 999px; text-decoration: none; font-weight: bold; box-shadow: 0 0 10px #1da1f2; transition: transform 0.2s ease;">🐦 <span>Tweet</span></a>
+    <a href="https://api.whatsapp.com/send?text=Check%20out%20this%20epic%20real-time%20aurora%20forecast%20by%20Aurora%20Viking!%20https%3A%2F%2Fwww.auroraviking.com%2Ftheauroraforecast" target="_blank" style="display: inline-flex; align-items: center; gap: 8px; padding: 10px 15px; background: #25D366; color: white; border-radius: 999px; text-decoration: none; font-weight: bold; box-shadow: 0 0 10px #25D366; transition: transform 0.2s ease;">📱 <span>WhatsApp</span></a>
+    <a href="https://www.facebook.com/sharer/sharer.php?u=https%3A%2F%2Fwww.auroraviking.com%2Ftheauroraforecast" target="_blank" style="display: inline-flex; align-items: center; gap: 8px; padding: 10px 15px; background: #1877f2; color: white; border-radius: 999px; text-decoration: none; font-weight: bold; box-shadow: 0 0 10px #1877f2; transition: transform 0.2s ease;">📘 <span>Facebook</span></a>
+  </div>
 </div>
 
 </body>
