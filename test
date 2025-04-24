@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Aurora Viking Real-Time Forecast</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0"></script>
+  <style>
+    body {
+      background: radial-gradient(circle at top, #000 0%, #020202 100%);
+      color: white;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      text-align: center;
+      margin: 0;
+      padding-bottom: 100px;
+    }
+
+    .chart-container {
+      width: 100%;
+      max-width: 1000px;
+      height: 60vh;
+      margin: 0 auto;
+      padding: 0 10px;
+    }
+
+    canvas {
+      display: block;
+      width: 100% !important;
+      height: 100% !important;
+    }
+  </style>
+</head>
+<body>
+  <h2>Aurora Viking Real-Time Bz Forecast</h2>
+  <div id="darkInfo">🌒 Loading twilight data...</div>
+  <div id="countdown"></div>
+  <div id="bzInfo">Calculating -BzH...</div>
+  <div id="auroraMessage"></div>
+  <div id="kpInfo">Loading Kp index...</div>
+  <div id="kpMessage"></div>
+  <div class="chart-container">
+    <canvas id="bzChart"></canvas>
+  </div>
+
+  <script>
+    const twilightTimes = {
+      "04-24": { "start": "01:48", "end": "03:48" },
+      "04-25": { "start": "01:44", "end": "03:51" },
+      "04-26": { "start": "01:41", "end": "03:54" },
+      "04-27": { "start": "01:38", "end": "03:57" },
+      "04-28": { "start": "01:34", "end": "04:00" },
+      "04-29": { "start": "01:30", "end": "04:03" },
+      "04-30": { "start": "01:27", "end": "04:06" },
+      "05-01": { "start": "01:23", "end": "04:09" },
+      "05-02": { "start": "01:20", "end": "04:12" },
+      "05-03": { "start": "01:17", "end": "04:15" }
+    };
+
+    function getYAxisRange(bzValues) {
+      const min = Math.min(...bzValues);
+      const max = Math.max(...bzValues);
+      const absMax = Math.max(Math.abs(min), Math.abs(max));
+      let yLimit;
+      if (absMax <= 5) yLimit = 5;
+      else if (absMax <= 10) yLimit = 10;
+      else if (absMax <= 20) yLimit = 20;
+      else if (absMax <= 50) yLimit = 50;
+      else yLimit = 100;
+      return { yMin: -yLimit, yMax: yLimit };
+    }
+
+    function fetchDarkTimes() {
+      const todayKey = new Date().toISOString().slice(5, 10);
+      const times = twilightTimes[todayKey];
+      const darkInfoEl = document.getElementById('darkInfo');
+      const countdownEl = document.getElementById('countdown');
+
+      if (times && times.start && times.end) {
+        darkInfoEl.textContent = `🌒 It's dark enough for auroras in Reykjavík between ${times.start} and ${times.end}`;
+        function updateCountdown() {
+          const now = new Date();
+          const [h, m] = times.start.split(':').map(Number);
+          const target = new Date();
+          target.setHours(h, m, 0, 0);
+          if (target <= now) target.setDate(target.getDate() + 1);
+          const diff = target - now;
+          const hours = Math.floor(diff / 3600000);
+          const minutes = Math.floor((diff % 3600000) / 60000);
+          countdownEl.textContent = `🕒 Darkness begins in ${hours}h ${minutes}m`;
+        }
+        updateCountdown();
+        setInterval(updateCountdown, 60000);
+      } else {
+        darkInfoEl.textContent = '🌒 Darkness time not available';
+        countdownEl.textContent = '';
+      }
+    }
+
+    document.addEventListener("DOMContentLoaded", function () {
+      const canvas = document.getElementById('bzChart');
+      const context = canvas.getContext('2d');
+      const bzInfo = document.getElementById('bzInfo');
+      const auroraMessage = document.getElementById('auroraMessage');
+      const kpInfo = document.getElementById('kpInfo');
+      const kpMessage = document.getElementById('kpMessage');
+      let chart;
+      let lastRange = "";
+
+      async function fetchBzData() {
+        const res = await fetch('https://services.swpc.noaa.gov/products/solar-wind/mag-2-hour.json');
+        const data = await res.json();
+        const rows = data.slice(1).filter(row => !isNaN(parseFloat(row[3])));
+        const times = rows.map(row => row[0].slice(11, 16));
+        const bzValues = rows.map(row => parseFloat(row[3]));
+        return { times, bzValues };
+      }
+
+      async function fetchKpData() {
+        const res = await fetch("https://services.swpc.noaa.gov/products/noaa-planetary-k-index.json");
+        const data = await res.json();
+        return parseInt(data[data.length - 1][1]);
+      }
+
+      function calculateBzH(bzValues) {
+        const oneHourValues = bzValues.slice(-60);
+        const bzH = oneHourValues.filter(bz => bz < 0).reduce((acc, bz) => acc + (-bz / 60), 0);
+        return parseFloat(bzH.toFixed(2));
+      }
+
+      async function updateChart() {
+        const { times, bzValues } = await fetchBzData();
+        const kp = await fetchKpData();
+        if (!bzValues.length || kp === null) return;
+
+        const bzH = calculateBzH(bzValues);
+        const bzHMsg = bzH > 6 ? "Strong aurora conditions – Get out now!" :
+                        bzH > 4.5 ? "Strong aurora likely" :
+                        bzH > 3 ? "Moderate aurora likely" :
+                        bzH > 1.5 ? "Faint aurora possible" :
+                        bzH > 0 ? "Weak aurora potential" : "No aurora potential";
+
+        bzInfo.textContent = `Current -BzH (1hr): ${bzH}`;
+        auroraMessage.textContent = bzHMsg;
+        kpInfo.textContent = `Kp index: ${kp}`;
+        kpMessage.textContent = kp >= 5 ? "Aurora overhead and to the south" :
+                              kp >= 4 ? "Aurora overhead" :
+                              kp >= 2 ? "Aurora to the north" :
+                              "Low aurora chances";
+
+        const { yMin, yMax } = getYAxisRange(bzValues);
+        if (!chart) {
+          chart = new Chart(context, {
+            type: 'line',
+            data: {
+              labels: times,
+              datasets: [{
+                label: 'IMF Bz (nT)',
+                data: bzValues,
+                borderColor: 'white',
+                backgroundColor: 'rgba(255,255,255,0.1)',
+                pointRadius: 0,
+                tension: 0.3
+              }]
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              scales: {
+                x: { ticks: { color: 'white' }, grid: { color: 'gray' } },
+                y: {
+                  min: yMin, max: yMax,
+                  ticks: { stepSize: 10, color: 'white' },
+                  grid: { color: 'gray' }
+                }
+              },
+              plugins: {
+                legend: { labels: { color: 'white' } }
+              }
+            }
+          });
+        } else {
+          chart.data.labels = times;
+          chart.data.datasets[0].data = bzValues;
+          chart.options.scales.y.min = yMin;
+          chart.options.scales.y.max = yMax;
+          chart.update();
+        }
+      }
+
+      updateChart();
+      setInterval(updateChart, 5 * 60 * 1000);
+      fetchDarkTimes();
+    });
+  </script>
+</body>
+</html>
