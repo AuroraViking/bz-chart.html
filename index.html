@@ -257,16 +257,18 @@ document.addEventListener("DOMContentLoaded", function () {
         throw new Error("API returned an error");
       }
 
-      // Get the times in UTC first
+      // Parse the API response times
       const astroTwilightEvening = new Date(data.results.astronomical_twilight_end);
       const astroTwilightMorning = new Date(data.results.astronomical_twilight_begin);
       
-      // Convert to local Iceland time (UTC+0)
-      // No need to adjust timezone for Iceland as it's already UTC+0
-
+      // For debugging
+      console.log("Evening twilight (UTC):", astroTwilightEvening);
+      console.log("Morning twilight (UTC):", astroTwilightMorning);
+      
       const now = new Date();
+      console.log("Current time (UTC):", now);
+      
       const darkCombinedElement = document.getElementById('darkCombined');
-      const countdownElement = document.getElementById('countdown');
       
       // Format times for display
       const eveningTimeStr = astroTwilightEvening.toLocaleTimeString('en-GB', {
@@ -281,22 +283,49 @@ document.addEventListener("DOMContentLoaded", function () {
         timeZone: 'Atlantic/Reykjavik'
       });
       
-      // Handle cases where it's already dark or will get dark later
-      if (now > astroTwilightEvening || now < astroTwilightMorning) {
-        // It's currently dark
+      // Special case for locations near the poles where "day" and "night" might behave differently
+      // For Iceland during certain months, there might be no astronomical twilight
+      if (astroTwilightEvening.getTime() === astroTwilightMorning.getTime()) {
+        darkCombinedElement.innerHTML = `☀️ No astronomical darkness tonight in Reykjavík<span id="countdown"></span>`;
+        return;
+      }
+      
+      // Is it currently dark?
+      // If evening twilight is before morning twilight, we're in a normal night cycle
+      const isDarkNow = astroTwilightEvening < astroTwilightMorning ?
+        (now >= astroTwilightEvening && now <= astroTwilightMorning) :
+        (now >= astroTwilightEvening || now <= astroTwilightMorning);
+      
+      // Update the display based on whether it's dark now or not
+      if (isDarkNow) {
+        // It's currently dark enough for auroras
+        const nextLight = astroTwilightMorning > now ? astroTwilightMorning : new Date(astroTwilightMorning);
+        nextLight.setDate(nextLight.getDate() + 1);
+        
         darkCombinedElement.innerHTML = `🌒 It's currently dark enough for auroras in Reykjavík<span id="countdown"></span>`;
-        countdownElement.textContent = ` (until ${morningTimeStr})`;
-      } else if (now < astroTwilightEvening) {
-        // It will get dark later today
+        document.getElementById('countdown').textContent = ` (until ${morningTimeStr})`;
+      } else {
+        // It will get dark later
+        // If twilight evening is earlier than current time, it's for the next day
+        let nextDarkTime = astroTwilightEvening;
+        if (nextDarkTime < now) {
+          nextDarkTime = new Date(astroTwilightEvening);
+          nextDarkTime.setDate(nextDarkTime.getDate() + 1);
+        }
+        
         darkCombinedElement.innerHTML = `🌒 Dark enough tonight in Reykjavík from ${eveningTimeStr} to ${morningTimeStr}<span id="countdown"></span>`;
         
-        // Setup countdown
+        // Setup countdown timer
+        const countdownElement = document.getElementById('countdown');
+        
         const updateCountdown = () => {
           const currentTime = new Date();
-          const diff = astroTwilightEvening - currentTime;
+          const diff = nextDarkTime - currentTime;
           
           if (diff <= 0) {
             countdownElement.textContent = " 🌑 It's dark now!";
+            // Refresh the entire component after it gets dark
+            setTimeout(fetchDarkTimes, 10000);
             return;
           }
           
@@ -307,9 +336,6 @@ document.addEventListener("DOMContentLoaded", function () {
         
         updateCountdown();
         setInterval(updateCountdown, 60000); // Update every minute
-      } else {
-        // Edge case, should rarely happen
-        darkCombinedElement.innerHTML = '☀️ Waiting for next darkness cycle<span id="countdown"></span>';
       }
     } catch (err) {
       console.error("Failed to fetch twilight times:", err);
