@@ -56,14 +56,14 @@
       100% { box-shadow: 0 0 5px #00ffcc; }
     }
     .chart-container {
-  width: 100%;
-  max-width: 1000px;
-  height: 60vh;
-  margin: 0 auto;
-  padding: 0 10px;
-  box-shadow: 0 0 10px #00ffcc;
-  animation: glowCycle 3s infinite;
-}
+      width: 100%;
+      max-width: 1000px;
+      height: 60vh;
+      margin: 0 auto;
+      padding: 0 10px;
+      box-shadow: 0 0 10px #00ffcc;
+      animation: glowCycle 3s infinite;
+    }
     canvas {
       display: block;
       width: 100% !important;
@@ -76,12 +76,12 @@
 <div class="top-bar">
   <div class="top-left">
     <div id="darkCombined" class="info-box">
-  🌒 Calculating when it gets dark in Reykjavík...
-  <span id="countdown">🕒 Calculating countdown...</span>
-</div>
-<div id="probabilityMeter" class="info-box" style="max-width: 400px; margin: 10px auto; font-size: 1.1rem; text-align: center;">
-  📈 Aurora Probability: <span id="auroraProbability">Calculating...</span>
-</div>
+      🌒 Calculating when it gets dark in Reykjavík...
+      <span id="countdown">🕒 Calculating countdown...</span>
+    </div>
+    <div id="probabilityMeter" class="info-box" style="max-width: 400px; margin: 10px auto; font-size: 1.1rem; text-align: center;">
+      📈 Aurora Probability: <span id="auroraProbability">Calculating...</span>
+    </div>
   </div>
   <div class="logo-container">
     <img src="White.svg" alt="Aurora Viking logo" style="height: 60px; filter: drop-shadow(0 0 10px #00ffcc);" />
@@ -102,7 +102,6 @@
 </div>
 </div>
 
-<!-- JavaScript remains unchanged below -->
 <script>
 document.addEventListener("DOMContentLoaded", function () {
   const canvas = document.getElementById('bzChart');
@@ -247,42 +246,70 @@ document.addEventListener("DOMContentLoaded", function () {
 
   async function fetchDarkTimes() {
     try {
-      const lat = 64.1355, lon = -21.8954;
+      const lat = 64.1355, lon = -21.8954; // Reykjavík coordinates
       const dateStr = new Date().toISOString().split('T')[0];
-      const url = `https://api.sunrise-sunset.org/json?lat=${lat}&lng=${lon}&date=${dateStr}&formatted=0&tzid=Atlantic/Reykjavik`;
+      const url = `https://api.sunrise-sunset.org/json?lat=${lat}&lng=${lon}&date=${dateStr}&formatted=0`;
+      
       const res = await fetch(url);
       const data = await res.json();
-
-      const astroTwilightEvening = data.results?.astronomical_twilight_end || null;
-      const astroTwilightMorning = data.results?.astronomical_twilight_begin || null;
-
-      const now = new Date();
-      const evening = new Date(astroTwilightEvening);
-      const morning = new Date(astroTwilightMorning);
-      let darkMsg = '';
-
-      if (!isNaN(evening.getTime()) && !isNaN(morning.getTime()) && evening < morning) {
-        darkMsg = `🌒 Dark enough tonight in Reykjavík from ${evening.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })} to ${morning.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}`;
-      } else if (!isNaN(morning.getTime()) && morning > now) {
-        darkMsg = `🌒 Astronomical twilight starts at ${morning.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}`;
-      } else {
-        darkMsg = '☀️ It won’t get dark enough for auroras in Reykjavík tonight';
+      
+      if (data.status !== "OK") {
+        throw new Error("API returned an error");
       }
 
-      document.getElementById('darkCombined').innerHTML = `${darkMsg}<span id='countdown'></span>`;
+      // Get the times in UTC first
+      const astroTwilightEvening = new Date(data.results.astronomical_twilight_end);
+      const astroTwilightMorning = new Date(data.results.astronomical_twilight_begin);
+      
+      // Convert to local Iceland time (UTC+0)
+      // No need to adjust timezone for Iceland as it's already UTC+0
 
-      if (!isNaN(evening.getTime()) && evening > now) {
-        const countdownElement = document.getElementById('countdown');
+      const now = new Date();
+      const darkCombinedElement = document.getElementById('darkCombined');
+      const countdownElement = document.getElementById('countdown');
+      
+      // Format times for display
+      const eveningTimeStr = astroTwilightEvening.toLocaleTimeString('en-GB', {
+        hour: '2-digit', 
+        minute: '2-digit',
+        timeZone: 'Atlantic/Reykjavik'
+      });
+      
+      const morningTimeStr = astroTwilightMorning.toLocaleTimeString('en-GB', {
+        hour: '2-digit', 
+        minute: '2-digit',
+        timeZone: 'Atlantic/Reykjavik'
+      });
+      
+      // Handle cases where it's already dark or will get dark later
+      if (now > astroTwilightEvening || now < astroTwilightMorning) {
+        // It's currently dark
+        darkCombinedElement.innerHTML = `🌒 It's currently dark enough for auroras in Reykjavík<span id="countdown"></span>`;
+        countdownElement.textContent = ` (until ${morningTimeStr})`;
+      } else if (now < astroTwilightEvening) {
+        // It will get dark later today
+        darkCombinedElement.innerHTML = `🌒 Dark enough tonight in Reykjavík from ${eveningTimeStr} to ${morningTimeStr}<span id="countdown"></span>`;
+        
+        // Setup countdown
         const updateCountdown = () => {
-          const now = new Date();
-          const target = evening;
-          const diff = target - now;
+          const currentTime = new Date();
+          const diff = astroTwilightEvening - currentTime;
+          
+          if (diff <= 0) {
+            countdownElement.textContent = " 🌑 It's dark now!";
+            return;
+          }
+          
           const hours = Math.floor(diff / 1000 / 60 / 60);
           const minutes = Math.floor((diff / 1000 / 60) % 60);
-          countdownElement.textContent = `🕒 Darkness begins in ${hours}h ${minutes}m`;
+          countdownElement.textContent = ` 🕒 Darkness begins in ${hours}h ${minutes}m`;
         };
+        
         updateCountdown();
-        setInterval(updateCountdown, 60000);
+        setInterval(updateCountdown, 60000); // Update every minute
+      } else {
+        // Edge case, should rarely happen
+        darkCombinedElement.innerHTML = '☀️ Waiting for next darkness cycle<span id="countdown"></span>';
       }
     } catch (err) {
       console.error("Failed to fetch twilight times:", err);
