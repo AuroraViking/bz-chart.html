@@ -118,21 +118,32 @@ document.addEventListener("DOMContentLoaded", function () {
   let lastRange = "";
 
   async function fetchBzData() {
-    const res = await fetch('https://services.swpc.noaa.gov/products/solar-wind/mag-2-hour.json');
-    const data = await res.json();
-    const rows = data.slice(1).filter(row => !isNaN(parseFloat(row[3])));
-    const times = rows.map(row => row[0].slice(11, 16));
-    const bzValues = rows.map(row => parseFloat(row[3]));
-    return { times, bzValues };
+    try {
+      const res = await fetch('https://services.swpc.noaa.gov/products/solar-wind/mag-2-hour.json');
+      const data = await res.json();
+      const rows = data.slice(1).filter(row => !isNaN(parseFloat(row[3])));
+      const times = rows.map(row => row[0].slice(11, 16));
+      const bzValues = rows.map(row => parseFloat(row[3]));
+      return { times, bzValues };
+    } catch (error) {
+      console.error("Failed to fetch Bz data:", error);
+      return { times: [], bzValues: [] };
+    }
   }
 
   async function fetchKpData() {
-    const res = await fetch("https://services.swpc.noaa.gov/products/noaa-planetary-k-index.json");
-    const data = await res.json();
-    return parseInt(data[data.length - 1][1]);
+    try {
+      const res = await fetch("https://services.swpc.noaa.gov/products/noaa-planetary-k-index.json");
+      const data = await res.json();
+      return parseInt(data[data.length - 1][1]);
+    } catch (error) {
+      console.error("Failed to fetch Kp data:", error);
+      return null;
+    }
   }
 
   function calculateBzH(bzValues) {
+    if (!bzValues.length) return 0;
     const oneHourValues = bzValues.slice(-120);
     const bzH = oneHourValues.filter(bz => bz < 0).reduce((acc, bz) => acc + (-bz / 60), 0);
     return parseFloat(bzH.toFixed(2));
@@ -149,15 +160,24 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   function getYAxisRange(bzValues) {
+    if (!bzValues.length) return { yMin: -5, yMax: 5, tag: "tight" };
+    
     const min = Math.min(...bzValues);
     const max = Math.max(...bzValues);
+    
+    // Fixed scaling logic with more gradual steps
     if (min >= -5 && max <= 5) return { yMin: -5, yMax: 5, tag: "tight" };
     if (min >= -10 && max <= 10) return { yMin: -10, yMax: 10, tag: "medium" };
-    return { yMin: -100, yMax: 100, tag: "wide" };
+    // Check if ANY value exceeds the thresholds, not if ALL values are within them
+    if (min < -10 || max > 10) return { yMin: -20, yMax: 20, tag: "large" };
+    if (min < -20 || max > 20) return { yMin: -50, yMax: 50, tag: "xlarge" };
+    if (min < -50 || max > 50) return { yMin: -100, yMax: 100, tag: "extreme" };
+    return { yMin: -10, yMax: 10, tag: "medium" }; // Fallback
   }
 
   function drawChart(times, bzValues, yMin, yMax) {
     if (chart) chart.destroy();
+    
     chart = new Chart(context, {
       type: 'line',
       data: {
@@ -171,7 +191,7 @@ document.addEventListener("DOMContentLoaded", function () {
           tension: 0.3,
           backgroundColor: function(ctx) {
             const { chartArea, ctx: c } = ctx.chart;
-            if (!chartArea) return;
+            if (!chartArea) return 'rgba(0,0,0,0)';
             const gradient = c.createLinearGradient(0, chartArea.top, 0, chartArea.bottom);
             gradient.addColorStop(0, 'rgba(0,255,0,0.3)');
             gradient.addColorStop(0.5, 'rgba(255,255,255,0.3)');
@@ -187,16 +207,31 @@ document.addEventListener("DOMContentLoaded", function () {
         responsive: true,
         maintainAspectRatio: false,
         scales: {
-          x: { ticks: { color: 'white' }, grid: { color: 'gray' } },
+          x: { 
+            ticks: { color: 'white' }, 
+            grid: { color: 'rgba(128, 128, 128, 0.3)' } 
+          },
           y: {
-            min: yMin, max: yMax,
-            ticks: { stepSize: 10, color: 'white' },
-            grid: { color: 'gray' }
+            min: yMin, 
+            max: yMax,
+            ticks: { 
+              color: 'white',
+              stepSize: yMax <= 10 ? 1 : yMax <= 20 ? 2 : yMax <= 50 ? 5 : 10
+            },
+            grid: { color: 'rgba(128, 128, 128, 0.3)' }
           }
         },
         plugins: {
-          legend: { labels: { color: 'white' } }
-        }
+          legend: { labels: { color: 'white' } },
+          tooltip: {
+            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+            titleColor: 'white',
+            bodyColor: 'white',
+            borderColor: '#00ffcc',
+            borderWidth: 1
+          }
+        },
+        backgroundColor: 'transparent'
       }
     });
   }
@@ -204,23 +239,32 @@ document.addEventListener("DOMContentLoaded", function () {
   async function updateChart() {
     const { times, bzValues } = await fetchBzData();
     const kp = await fetchKpData();
-    if (!bzValues.length || kp === null) return;
+    
+    if (!bzValues.length) {
+      console.warn("No Bz values available");
+      return;
+    }
 
     const bzH = calculateBzH(bzValues);
-    const bzHMessage = bzH > 6 ? "✨ Strong aurora conditions – Get out now!" :
+    
+    const bzHMessage = 
+      bzH > 6 ? "✨ Strong aurora conditions – Get out now!" :
       bzH > 4.5 ? "Strong aurora likely in the next few hours" :
       bzH > 3 ? "Moderate aurora likely in the next few hours" :
       bzH > 1.5 ? "Faint aurora likely in the next few hours" :
-      bzH > 0 ? "Weak aurora possible in the next hours" : "No aurora potential right now";
+      bzH > 0 ? "Weak aurora possible in the next hours" : 
+      "No aurora potential right now";
+    
     const { yMin, yMax, tag } = getYAxisRange(bzValues);
 
-    bzInfo.innerHTML = `Current -BzH (1hr): <span style=\"color: white; font-weight: bold;\">${bzH}</span>`;
+    bzInfo.innerHTML = `Current -BzH (1hr): <span style="color: white; font-weight: bold;">${bzH}</span>`;
     auroraMessage.textContent = bzHMessage;
 
     // Aurora Probability Calculation
-    const score = Math.min(10, Math.round((bzH + kp / 2) * 1.2));
+    const score = Math.min(10, Math.round((bzH + (kp || 0) / 2) * 1.2));
     let level = 'Unknown';
     let color = '#ccc';
+    
     if (score >= 9) { level = '🔴 Extreme'; color = 'red'; }
     else if (score >= 7) { level = '🟠 High'; color = 'orange'; }
     else if (score >= 4) { level = '🟡 Moderate'; color = 'gold'; }
@@ -231,8 +275,10 @@ document.addEventListener("DOMContentLoaded", function () {
     probEl.textContent = level;
     probEl.style.color = color;
 
-    kpInfo.innerHTML = `Kp index: <span style="color: white; font-weight: bold;">${kp}</span>`;
-    kpMessage.textContent = getKpMessage(kp);
+    kpInfo.innerHTML = kp !== null ? 
+      `Kp index: <span style="color: white; font-weight: bold;">${kp}</span>` : 
+      'Kp index: Not available';
+    kpMessage.textContent = kp !== null ? getKpMessage(kp) : '';
 
     if (!chart || lastRange !== tag) {
       drawChart(times, bzValues, yMin, yMax);
@@ -244,122 +290,127 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   }
 
-async function fetchDarkTimes() {
-  try {
-    const lat = 64.1355, lon = -21.8954; // Reykjavík coordinates
-    const dateStr = new Date().toISOString().split('T')[0];
-    const url = `https://api.sunrise-sunset.org/json?lat=${lat}&lng=${lon}&date=${dateStr}&formatted=0`;
-    
-    const res = await fetch(url);
-    const data = await res.json();
-    
-    if (data.status !== "OK") {
-      throw new Error("API returned an error");
-    }
-
-    // Parse the API response times
-    const astroTwilightEvening = new Date(data.results.astronomical_twilight_end);
-    const astroTwilightMorning = new Date(data.results.astronomical_twilight_begin);
-    
-    // For debugging
-    console.log("Evening twilight (UTC):", astroTwilightEvening);
-    console.log("Morning twilight (UTC):", astroTwilightMorning);
-    
-    const now = new Date();
-    console.log("Current time (UTC):", now);
-    
-    const darkCombinedElement = document.getElementById('darkCombined');
-    
-    // Format times for display
-    const eveningTimeStr = astroTwilightEvening.toLocaleTimeString('en-GB', {
-      hour: '2-digit', 
-      minute: '2-digit',
-      timeZone: 'Atlantic/Reykjavik'
-    });
-    
-    const morningTimeStr = astroTwilightMorning.toLocaleTimeString('en-GB', {
-      hour: '2-digit', 
-      minute: '2-digit',
-      timeZone: 'Atlantic/Reykjavik'
-    });
-    
-    // Calculate the duration of darkness in minutes
-    const darknessDuration = (astroTwilightMorning - astroTwilightEvening) / (1000 * 60);
-    console.log("Darkness duration (minutes):", darknessDuration);
-    
-    // Better check for no astronomical darkness
-    // If darkness duration is negative or very short (less than 10 minutes), consider it as no darkness
-    if (darknessDuration < 10) {
-      darkCombinedElement.innerHTML = `☀️ No astronomical darkness tonight in Reykjavík<span id="countdown"></span>`;
-      return;
-    }
-    
-    // Is it currently dark?
-    // If evening twilight is before morning twilight, we're in a normal night cycle
-    const isDarkNow = (now >= astroTwilightEvening && now <= astroTwilightMorning);
-    
-    // Update the display based on whether it's dark now or not
-    if (isDarkNow) {
-      // It's currently dark enough for auroras
-      darkCombinedElement.innerHTML = `🌒 It's currently dark enough for auroras in Reykjavík<span id="countdown"></span>`;
-      document.getElementById('countdown').textContent = ` (until ${morningTimeStr})`;
-    } else {
-      // It will get dark later
-      // Determine if twilight is coming tonight or if it's already passed
-      let nextDarkTime = astroTwilightEvening;
-      let nextDarkMessage = '';
+  async function fetchDarkTimes() {
+    try {
+      const lat = 64.1355, lon = -21.8954; // Reykjavík coordinates
+      const dateStr = new Date().toISOString().split('T')[0];
+      const url = `https://api.sunrise-sunset.org/json?lat=${lat}&lng=${lon}&date=${dateStr}&formatted=0`;
       
-      if (now > astroTwilightMorning && now < astroTwilightEvening) {
-        // We're in daylight, darkness is coming tonight
-        nextDarkMessage = `🌒 Dark enough tonight in Reykjavík from ${eveningTimeStr} to ${morningTimeStr}`;
-      } else if (now > astroTwilightEvening) {
-        // We've passed evening twilight but it's not dark yet (shouldn't happen in normal cases)
-        // This is a safeguard
-        nextDarkTime = new Date(astroTwilightEvening);
-        nextDarkTime.setDate(nextDarkTime.getDate() + 1);
-        const nextEveningStr = nextDarkTime.toLocaleTimeString('en-GB', {
-          hour: '2-digit', minute: '2-digit', timeZone: 'Atlantic/Reykjavik'
-        });
-        nextDarkMessage = `🌒 Dark enough tomorrow night in Reykjavík from ${nextEveningStr}`;
-      } else {
-        // We're before morning twilight or after evening twilight
-        // But not currently in astronomical darkness (which is handled by isDarkNow)
-        nextDarkMessage = `🌒 Dark enough tonight in Reykjavík from ${eveningTimeStr} to ${morningTimeStr}`;
+      const res = await fetch(url);
+      const data = await res.json();
+      
+      if (data.status !== "OK") {
+        throw new Error("API returned an error");
+      }
+
+      // Parse the API response times
+      const astroTwilightEvening = new Date(data.results.astronomical_twilight_end);
+      const astroTwilightMorning = new Date(data.results.astronomical_twilight_begin);
+      
+      // For debugging
+      console.log("Evening twilight (UTC):", astroTwilightEvening);
+      console.log("Morning twilight (UTC):", astroTwilightMorning);
+      
+      const now = new Date();
+      console.log("Current time (UTC):", now);
+      
+      const darkCombinedElement = document.getElementById('darkCombined');
+      
+      // Format times for display
+      const eveningTimeStr = astroTwilightEvening.toLocaleTimeString('en-GB', {
+        hour: '2-digit', 
+        minute: '2-digit',
+        timeZone: 'Atlantic/Reykjavik'
+      });
+      
+      const morningTimeStr = astroTwilightMorning.toLocaleTimeString('en-GB', {
+        hour: '2-digit', 
+        minute: '2-digit',
+        timeZone: 'Atlantic/Reykjavik'
+      });
+      
+      // Calculate the duration of darkness in minutes
+      const darknessDuration = (astroTwilightMorning - astroTwilightEvening) / (1000 * 60);
+      console.log("Darkness duration (minutes):", darknessDuration);
+      
+      // Better check for no astronomical darkness
+      // If darkness duration is negative or very short (less than 10 minutes), consider it as no darkness
+      if (darknessDuration < 10) {
+        darkCombinedElement.innerHTML = `☀️ No astronomical darkness tonight in Reykjavík<span id="countdown"></span>`;
+        return;
       }
       
-      darkCombinedElement.innerHTML = nextDarkMessage + `<span id="countdown"></span>`;
+      // Is it currently dark?
+      // If evening twilight is before morning twilight, we're in a normal night cycle
+      const isDarkNow = (now >= astroTwilightEvening && now <= astroTwilightMorning);
       
-      // Setup countdown timer
-      const countdownElement = document.getElementById('countdown');
-      
-      const updateCountdown = () => {
-        const currentTime = new Date();
-        const diff = nextDarkTime - currentTime;
+      // Update the display based on whether it's dark now or not
+      if (isDarkNow) {
+        // It's currently dark enough for auroras
+        darkCombinedElement.innerHTML = `🌒 It's currently dark enough for auroras in Reykjavík<span id="countdown"></span>`;
+        document.getElementById('countdown').textContent = ` (until ${morningTimeStr})`;
+      } else {
+        // It will get dark later
+        // Determine if twilight is coming tonight or if it's already passed
+        let nextDarkTime = astroTwilightEvening;
+        let nextDarkMessage = '';
         
-        if (diff <= 0) {
-          countdownElement.textContent = " 🌑 It's dark now!";
-          // Refresh the entire component after it gets dark
-          setTimeout(fetchDarkTimes, 10000);
-          return;
+        if (now > astroTwilightMorning && now < astroTwilightEvening) {
+          // We're in daylight, darkness is coming tonight
+          nextDarkMessage = `🌒 Dark enough tonight in Reykjavík from ${eveningTimeStr} to ${morningTimeStr}`;
+        } else if (now > astroTwilightEvening) {
+          // We've passed evening twilight but it's not dark yet (shouldn't happen in normal cases)
+          // This is a safeguard
+          nextDarkTime = new Date(astroTwilightEvening);
+          nextDarkTime.setDate(nextDarkTime.getDate() + 1);
+          const nextEveningStr = nextDarkTime.toLocaleTimeString('en-GB', {
+            hour: '2-digit', minute: '2-digit', timeZone: 'Atlantic/Reykjavik'
+          });
+          nextDarkMessage = `🌒 Dark enough tomorrow night in Reykjavík from ${nextEveningStr}`;
+        } else {
+          // We're before morning twilight or after evening twilight
+          // But not currently in astronomical darkness (which is handled by isDarkNow)
+          nextDarkMessage = `🌒 Dark enough tonight in Reykjavík from ${eveningTimeStr} to ${morningTimeStr}`;
         }
         
-        const hours = Math.floor(diff / 1000 / 60 / 60);
-        const minutes = Math.floor((diff / 1000 / 60) % 60);
-        countdownElement.textContent = ` 🕒 Darkness begins in ${hours}h ${minutes}m`;
-      };
-      
-      updateCountdown();
-      setInterval(updateCountdown, 60000); // Update every minute
+        darkCombinedElement.innerHTML = nextDarkMessage + `<span id="countdown"></span>`;
+        
+        // Setup countdown timer
+        const countdownElement = document.getElementById('countdown');
+        
+        const updateCountdown = () => {
+          const currentTime = new Date();
+          const diff = nextDarkTime - currentTime;
+          
+          if (diff <= 0) {
+            countdownElement.textContent = " 🌑 It's dark now!";
+            // Refresh the entire component after it gets dark
+            setTimeout(fetchDarkTimes, 10000);
+            return;
+          }
+          
+          const hours = Math.floor(diff / 1000 / 60 / 60);
+          const minutes = Math.floor((diff / 1000 / 60) % 60);
+          countdownElement.textContent = ` 🕒 Darkness begins in ${hours}h ${minutes}m`;
+        };
+        
+        updateCountdown();
+        setInterval(updateCountdown, 60000); // Update every minute
+
+      }
+    } catch (err) {
+      console.error("Failed to fetch twilight times:", err);
+      document.getElementById('darkCombined').innerHTML = '🌒 Darkness time not available<span id="countdown"></span>';
     }
-  } catch (err) {
-    console.error("Failed to fetch twilight times:", err);
-    document.getElementById('darkCombined').innerHTML = '🌒 Darkness time not available<span id="countdown"></span>';
   }
-}
+
+  // Initialize the application
   updateChart();
   fetchDarkTimes();
-  setInterval(updateChart, 5 * 60 * 1000);
-  setInterval(fetchDarkTimes, 60 * 60 * 1000);
+  
+  // Set up periodic updates
+  setInterval(updateChart, 5 * 60 * 1000); // Update chart every 5 minutes
+  setInterval(fetchDarkTimes, 60 * 60 * 1000); // Update darkness times every hour
 });
 </script>
 
