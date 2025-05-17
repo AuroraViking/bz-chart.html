@@ -102,6 +102,17 @@
 </div>
 </div>
 
+<!-- Satellite image container -->
+<div style="width: 100%; max-width: 1000px; margin: 30px auto; padding: 0 20px;">
+  <div style="border-radius: 12px; overflow: hidden; box-shadow: 0 0 10px #00ffcc; animation: glowCycle 3s infinite;">
+    <iframe width="100%" height="450"
+      src="https://embed.windy.com/embed2.html?lat=64.9631&lon=-19.0208&detailLat=64.9631&detailLon=-19.0208&width=650&height=450&zoom=6&level=surface&overlay=satellite&product=satellite&menu=&message=true&marker=true&calendar=now&pressure=true&type=map&location=coordinates&detail=true&metricWind=default&metricTemp=default&radarRange=-1"
+      frameborder="0" style="display: block; border: none;">
+    </iframe>
+  </div>
+</div>
+</div>
+
 <script>
 document.addEventListener("DOMContentLoaded", function () {
   const canvas = document.getElementById('bzChart');
@@ -414,6 +425,7 @@ document.addEventListener("DOMContentLoaded", function () {
 });
 </script>
 
+<!-- Social sharing section -->
 <div style="margin: 40px auto 60px; max-width: 600px; padding: 20px; background: transparent; border-radius: 12px;">
   <span style="font-size: 1rem; font-weight: 600; color: #00ffcc;">📣 Share this forecast:</span>
   <div style="margin-top: 10px; display: flex; justify-content: center; flex-wrap: wrap; gap: 10px;">
